@@ -116,7 +116,7 @@ function fill(data) {
     ? "H = the observed route deserves a closer site review, under the course model."
     : "H = the reported email is phishing in the synthetic scenario.";
   byId("assumptions").textContent = observed
-    ? "HTTP observations are real. Prior, likelihoods, weights and rewards are illustrative. The result does not classify the site as phishing."
+    ? "HTTP observations are real. Prior, likelihoods, weights and rewards are illustrative. Read the result as a classroom estimate of review priority."
     : "Synthetic observations and illustrative rewards.";
   if (observed) {
     const selector = byId("destination");
