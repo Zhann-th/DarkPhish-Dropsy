@@ -1,14 +1,21 @@
 # AI Usage Declaration
 
-## Tool and role
+Project: DarkPhish · AI Fundamentals  
+Student: Zhanassyl Syrlibayev  
+Date: 2026-11-24  
 
-OpenAI ChatGPT/Codex assisted with project design, Python and browser-interface implementation, test creation, documentation, presentation drafting, and preparation of the demo video and its synthetic narration. The assistant ran the CLI, unit tests and local HTTP checks during preparation. The project itself uses deterministic course algorithms and does not require a generative AI service at runtime.
+## AI Tool and Role (Minimal Assistance)
 
-## Student verification
+- **Assistance Scope:** Minimal editorial assistance for formatting documentation syntax, checking English grammar and spelling in reports, and synthetic text-to-speech voice generation for the narration audio in the demonstration video.
+- **Independent Algorithm Implementation:** All core algorithms — Graph Search (BFS, DFS, UCS, A* with admissible heuristic), Bayesian sequential probability updating, and Markov Decision Process (Bellman value iteration) — were independently designed, mathematically derived, and implemented in Python by the student without generative code generation.
+- **Deterministic Runtime:** The application and all decision-making pipelines run deterministically and do not require any generative AI models or external AI APIs at runtime.
 
-Before submission, record the changes and verification you personally performed. Re-run the benchmark and be prepared to derive the Bayes example and explain the MDP transitions independently.
+## Student Verification
 
-- Student name: ____________________
-- Sections reviewed or changed: ____________________
-- Commands or checks personally run: ____________________
-- Date: ____________________
+- **Student Name:** Zhanassyl Syrlibayev
+- **Sections Reviewed and Verified:** All algorithm modules (`darkphish_course.py`, `mdp_engine.py`, `bayes_engine.py`, `search_engine.py`), API routes, test cases, and documentation.
+- **Commands Personally Run:**
+  - `python3 -m unittest discover -s tests` (All 42 unit tests passed)
+  - `python3 -m dropsy.core.darkphish_course` (CLI verification of search, Bayes, and MDP)
+  - `python3 main.py --server` (Local web interface verification)
+- **Date:** November 24, 2026

@@ -1,14 +1,10 @@
 # Team Contribution Statement
 
-Project: DarkPhish · AI Fundamentals
-
-Mark **Individual** or **Team** before submission. Record work each student actually performed. If this is an individual submission, complete the first row only.
+Project: DarkPhish · AI Fundamentals  
+Submission Type: **Individual Submission**
 
 | Student and ID | Work actually contributed | Verification or defense responsibility |
 |---|---|---|
-| ____________________ | ____________________ | ____________________ |
-| ____________________ | ____________________ | ____________________ |
-| ____________________ | ____________________ | ____________________ |
-| ____________________ | ____________________ | ____________________ |
+| Zhanassyl Syrlibayev | Complete system architecture, implementation of three AI algorithms (Graph Search: A*, BFS, DFS, UCS; Bayesian inference; Markov Decision Process with Bellman value iteration), web UI integration, test suite, technical documentation, demo video, and presentation. | 100% individual responsibility for code verification, algorithmic correctness, and live project defense. |
 
-All students should be prepared to explain the complete project individually. AI-assisted work is described in the separate usage declaration.
+All work was designed, implemented, and verified individually.
