@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DarkPhish | Dropsy AI Fundamentals</title>
+<link rel="stylesheet" href="/static/site.css?v=7">
+<link rel="stylesheet" href="/static/darkphish.css?v=7.3">
+<script src="/static/darkphish.js?v=7.3" defer></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="frame masthead">
+    <a class="brand" href="/"><span class="brand-mark" aria-hidden="true"></span>Dropsy</a>
+    <nav class="nav-links" aria-label="Разделы сайта"><a href="/">Обзор</a><a href="/cases">Дела</a><a href="/audit">Аудит</a><a href="/darkphish" aria-current="page">DarkPhish</a></nav>
+  </div>
+</header>
+<main class="frame">
+<section class="intro">
+  <div><p class="label">AI Fundamentals Final Project</p><h1>DarkPhish</h1>
+  <p>Choose a route through the evidence, update a probability, then compare the possible responses.</p></div>
+  <div>
+    <label>Input source<select id="mode"><option value="fixture">Phishing-report example</option><option value="site">Public website URL</option></select></label>
+    <form id="site-controls" hidden>
+      <label>Public URL<input id="target" type="text" inputmode="url" required maxlength="2048" placeholder="https://example.org"></label>
+      <button type="submit">Collect website</button>
+    </form>
+    <form id="controls">
+      <label>Search method<select id="method"><option value="astar">A*</option><option value="ucs">Uniform Cost Search</option><option value="bfs">Breadth-first search</option><option value="dfs">Depth-first search</option></select></label>
+      <label id="scenario-field">Evidence scenario<select id="scenario"><option value="complete">All observations available</option><option value="missing">Analyst finding unavailable</option></select></label>
+      <label id="destination-field" hidden>Destination page<select id="destination"></select></label>
+      <button type="submit">Run analysis</button>
+    </form>
+  </div>
+</section>
+<p id="notice" role="status"></p>
+<div id="results" hidden>
+<p id="context" class="muted"></p>
+<section class="panel" aria-labelledby="graph-heading">
+  <div class="section-head"><div><p class="label">Search</p><h2 id="graph-heading">Evidence route</h2></div><p id="route-summary"></p></div>
+  <div class="graph-scroll"><svg id="graph" viewBox="0 0 890 330" aria-label="Directed evidence graph with weighted edges"></svg></div>
+  <div id="comparison"></div>
+  <details><summary>Expansion trace for selected method</summary><div id="trace"></div></details>
+</section>
+<div class="pair">
+  <section class="panel" aria-labelledby="belief-heading">
+    <p class="label">Probabilistic reasoning</p><h2 id="belief-heading">Bayesian update</h2>
+    <p id="posterior" class="metric"></p>
+    <p id="hypothesis" class="muted"></p>
+    <div id="belief-table"></div>
+  </section>
+  <section class="panel" aria-labelledby="decision-heading">
+    <p class="label">Sequential decision making</p><h2 id="decision-heading">Bellman policy</h2>
+    <p id="decision" class="action"></p>
+    <p id="iterations" class="muted"></p>
+    <div id="actions"></div>
+    <p class="muted" id="assumptions"></p>
+  </section>
+</div>
+</div>
+</main>
+<footer class="frame">The example uses synthetic observations. Website mode uses observed HTTP responses with illustrative model assumptions.</footer>
+</body>
+</html>

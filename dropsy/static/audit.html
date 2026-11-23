@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Dropsy — Аудит веб-активов</title>
+  <link rel="stylesheet" href="/static/site.css?v=7">
+  <link rel="stylesheet" href="/static/audit.css?v=7.2">
+  <script src="/static/audit-graph.js?v=7.2" defer></script>
+  <script src="/static/audit.js?v=7.3" defer></script>
+  <script src="/static/timeline.js?v=7" defer></script>
+</head>
+<body>
+  <a class="skip" href="#main">К содержанию</a>
+  <header class="site-header">
+    <div class="frame masthead">
+      <a class="brand" href="/"><span class="brand-mark" aria-hidden="true"></span>Dropsy</a>
+      <nav class="nav-links" aria-label="Разделы сайта"><a href="/">Обзор</a><a href="/cases">Дела</a><a href="/audit" aria-current="page">Аудит</a><a href="/demo">DarkPhish</a></nav>
+    </div>
+  </header>
+  <main class="frame" id="main">
+    <section class="page-intro">
+      <div>
+        <p class="eyebrow">Рабочая консоль</p>
+        <h1 class="page-title">Аудит веб-активов</h1>
+        <p class="intro">Сохраните состояние веб-актива и сравните его с любой версией из истории.</p>
+      </div>
+      <div class="actions">
+        <label class="button secondary file-button">Открыть JSON-снимок
+          <input type="file" id="current-file" accept=".json,application/json" aria-label="Открыть JSON-снимок">
+        </label>
+        <button id="load-example" class="button secondary">Открыть учебный пример</button>
+      </div>
+    </section>
+
+    <p id="audit-case-reference" hidden><a id="audit-case-back" href="/cases">Вернуться к делу ↗</a></p>
+    <div class="workspace">
+      <section class="panel collection" aria-labelledby="collect-title">
+        <h2 id="collect-title">Сбор данных</h2>
+        <form id="collect-form">
+          <label for="target">Адрес веб-актива или путь к папке</label>
+          <div class="target-row">
+            <input id="target" required maxlength="2048" placeholder="https://example.com/" autocomplete="off" spellcheck="false">
+            <button class="button primary" id="collect" type="submit">Собрать снимок</button>
+          </div>
+          <label class="inline-label" for="max-pages">Лимит страниц
+            <select id="max-pages"><option>1</option><option>6</option><option selected>12</option><option>24</option><option>40</option></select>
+          </label>
+          <p id="config-status" class="muted">Проверяем настройки сбора…</p>
+        </form>
+      </section>
+      <section class="panel baseline" aria-labelledby="baseline-title">
+        <h2 id="baseline-title">Эталон для сравнения</h2>
+        <p id="baseline-status" class="muted">Загрузите предыдущий JSON-снимок или сохраните текущий как эталон.</p>
+        <div class="actions">
+          <label class="button secondary file-button">Загрузить эталон
+            <input type="file" id="baseline-file" accept=".json,application/json" aria-label="Загрузить эталон">
+          </label>
+          <button type="button" class="button secondary" id="set-baseline" disabled>Текущий → эталон</button>
+        </div>
+      </section>
+    </div>
+    <p id="status" role="status" aria-live="polite" class="status"></p>
+
+    <section class="panel timeline" id="timeline" aria-labelledby="timeline-title">
+      <div class="timeline-head">
+        <div>
+          <h2 id="timeline-title">История снимков</h2>
+          <p class="muted" id="history-note">Сохраните снимок, чтобы открыть его после перезапуска.</p>
+        </div>
+        <button class="button secondary" id="save-history" disabled>Сохранить снимок</button>
+      </div>
+      <label for="history-asset">Актив</label>
+      <select id="history-asset" disabled>
+        <option value="">Сохранённых активов пока нет</option>
+      </select>
+      <div id="history-controls" hidden>
+        <div class="history-track">
+          <label for="history-range">Выбрать версию на шкале</label>
+          <input type="range" id="history-range" min="0" max="0" value="0">
+          <div id="history-ticks" class="history-ticks" aria-hidden="true"></div>
+        </div>
+        <div class="history-selects">
+          <label for="history-baseline">Сравнить с
+            <select id="history-baseline"></select>
+          </label>
+          <label for="history-current">Открыть версию
+            <select id="history-current"></select>
+          </label>
+          <button type="button" class="button secondary" id="history-more" hidden>Более ранние</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="results" hidden aria-labelledby="result-heading">
+      <div class="result-head">
+        <div>
+          <p class="eyebrow" id="source"></p>
+          <h2 id="result-heading">Результаты аудита</h2>
+          <p class="muted" id="scope"></p>
+        </div>
+        <div class="actions">
+          <a class="button secondary" id="open-darkphish" href="/darkphish" hidden>Открыть URL в DarkPhish</a>
+          <button class="button secondary" id="download-json">Снимок JSON</button>
+          <button class="button secondary" id="download-report">Отчёт Markdown</button>
+        </div>
+      </div>
+      <details id="attach-case" class="panel attach-case" hidden>
+        <summary>Добавить снимок в дело</summary>
+        <form id="attach-case-form">
+          <label for="attach-case-select">Дело</label>
+          <div class="actions">
+            <select id="attach-case-select" required></select>
+            <button class="button primary" id="attach-case-save" type="submit" disabled>Прикрепить снимок</button>
+          </div>
+          <a id="attach-case-open" href="/cases">Открыть дела ↗</a>
+        </form>
+      </details>
+      <dl class="metrics" id="metrics"></dl>
+      <div class="workspace detailed">
+        <section class="panel" aria-labelledby="findings-heading">
+          <h3 id="findings-heading">Замечания</h3>
+          <ul class="findings" id="findings"></ul>
+        </section>
+        <section class="panel" aria-labelledby="changes-heading">
+          <h3 id="changes-heading">Изменения к эталону</h3>
+          <p id="diff-summary" class="muted">Загрузите эталон для сравнения.</p>
+          <div id="diff" class="list-scroll"></div>
+        </section>
+      </div>
+      <section class="panel audit-graph" id="audit-graph-panel" hidden aria-labelledby="audit-graph-heading">
+        <div class="result-head">
+          <div>
+            <h3 id="audit-graph-heading">Граф структуры сайта</h3>
+            <p class="muted audit-graph-meta" id="audit-graph-meta"></p>
+          </div>
+          <div class="actions">
+            <button type="button" class="button" id="audit-graph-zoom-out" aria-label="Уменьшить граф">−</button>
+            <button type="button" class="button" id="audit-graph-zoom-in" aria-label="Увеличить граф">+</button>
+            <button type="button" class="button" id="audit-graph-reset">Сбросить вид</button>
+          </div>
+        </div>
+        <div id="audit-graph-viewport" class="audit-graph-viewport" tabindex="0" aria-label="Прокручиваемый граф страниц">
+          <div class="audit-graph-surface" id="audit-graph-surface">
+            <div class="audit-graph-stage" id="audit-graph-stage"></div>
+          </div>
+        </div>
+        <div class="audit-graph-footer">
+          <p class="muted" id="audit-graph-selection" aria-live="polite"></p>
+          <button type="button" class="button" id="audit-graph-inspect">Сведения о странице</button>
+        </div>
+      </section>
+      <section class="panel topology" id="topology-panel" hidden aria-labelledby="topology-heading">
+        <h3 id="topology-heading">Карта найденных ссылок</h3>
+        <div class="list-scroll" id="link-map"></div>
+      </section>
+      <section class="panel evidence" aria-labelledby="evidence-heading">
+        <div class="result-head evidence-head">
+          <div>
+            <h3 id="evidence-heading">Доказательства</h3>
+            <p id="fingerprint" class="muted fingerprint"></p>
+          </div>
+          <div class="actions evidence-filters">
+            <input id="record-search" type="search" aria-label="Поиск по доказательствам" placeholder="Поиск по доказательствам">
+            <select id="record-category" aria-label="Тип доказательства">
+              <option value="">Все типы</option>
+              <option value="dns">DNS</option><option value="tls">TLS</option><option value="page">Страницы</option>
+              <option value="link">Ссылки</option><option value="file">Файлы</option>
+            </select>
+          </div>
+        </div>
+        <div class="list-scroll" id="records"></div>
+      </section>
+      <section class="panel audit-assistant" aria-labelledby="assistant-heading">
+        <div class="result-head">
+          <div>
+            <h3 id="assistant-heading">Разбор замечаний</h3>
+            <p class="muted">Объяснение по текущему снимку.</p>
+          </div>
+          <button class="button secondary" id="explain">Объяснить результаты</button>
+        </div>
+        <p id="assistant-output" class="assistant-output" role="status" hidden></p>
+      </section>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="frame masthead">
+      <a class="brand" href="/"><span class="brand-mark" aria-hidden="true"></span>Dropsy</a>
+      <nav class="nav-links" aria-label="Дополнительные ссылки"><a href="/cases">Дела</a><a href="/audit">Аудит</a><a href="/demo">DarkPhish</a><a href="/docs">API</a></nav>
+    </div>
+  </footer>
+</body>
+</html>

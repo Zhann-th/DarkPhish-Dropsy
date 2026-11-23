@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f4ee">
+  <meta name="description" content="Dropsy сохраняет снимки сайта и показывает, что изменилось между проверками.">
+  <title>Dropsy — история изменений сайта</title>
+  <link rel="stylesheet" href="/static/site.css?v=7">
+  <link rel="stylesheet" href="/static/front.css?v=6">
+  <script src="/static/front.js?v=6" defer></script>
+</head>
+<body>
+  <a class="skip" href="#main">К содержанию</a>
+  <header class="site-header">
+    <div class="frame masthead">
+      <a class="brand" href="/"><span class="brand-mark" aria-hidden="true"></span>Dropsy</a>
+      <nav class="nav-links" aria-label="Разделы сайта"><a href="/" aria-current="page">Обзор</a><a href="/cases">Дела</a><a href="/audit">Аудит</a><a href="/demo">DarkPhish</a></nav>
+    </div>
+  </header>
+  <main class="frame" id="main">
+    <section class="home-hero" aria-labelledby="home-title">
+      <div class="home-copy">
+        <p class="eyebrow">Рабочее пространство OSINT</p>
+        <h1 id="home-title">Соберите <em>материалы по делу.</em></h1>
+        <p>Сохраняйте источники, заметки и скриншоты. Когда нужен повторный аудит, сравните снимки и посмотрите, что изменилось.</p>
+        <div class="actions">
+          <a class="button primary" href="/cases">Открыть дела <span aria-hidden="true">↗</span></a>
+          <a class="home-link" href="/audit">Открыть аудит <span aria-hidden="true">↗</span></a>
+        </div>
+      </div>
+
+      <section class="sample" aria-label="Учебное сравнение снимков">
+        <div class="sample-head"><span>Сравнение снимков</span><span>Учебный пример</span></div>
+        <h2>workbench.example</h2>
+        <div class="sample-switch" aria-label="Версия сайта">
+          <button type="button" data-preview="release" aria-pressed="true" disabled>После релиза</button>
+          <button type="button" data-preview="repair" aria-pressed="false" disabled>После правки</button>
+        </div>
+        <table class="sample-table">
+          <thead><tr><th scope="col">Наблюдение</th><th scope="col">До</th><th scope="col">После</th></tr></thead>
+          <tbody id="preview-rows">
+            <tr><th scope="row">Страница /help</th><td>200</td><td>404</td></tr>
+            <tr><th scope="row">Заголовок CSP</th><td>Есть</td><td>Отсутствует</td></tr>
+          </tbody>
+        </table>
+        <div class="sample-foot">
+          <p id="preview-status" role="status"></p>
+          <a id="preview-link" href="/audit?example=1#timeline">Открыть историю <span aria-hidden="true">↗</span></a>
+        </div>
+      </section>
+    </section>
+
+    <section class="workflow" id="workflow" aria-labelledby="workflow-title">
+      <h2 id="workflow-title">Как это работает</h2>
+      <dl>
+        <div><dt>Создайте дело</dt><dd>Соберите ссылки, скриншоты и заметки по одной теме.</dd></div>
+        <div><dt>Зафиксируйте состояние</dt><dd>Снимок аудита содержит DNS, TLS, HTTP-заголовки и найденные ссылки.</dd></div>
+        <div><dt>Проверьте изменения</dt><dd>Посмотрите значения полей до и после, затем выгрузите отчёт.</dd></div>
+      </dl>
+    </section>
+    <section class="training-link">
+      <div>
+        <h2>DarkPhish для AI Fundamentals</h2>
+        <p>Сравните BFS, DFS, UCS и A* на учебном примере или публичном сайте. Затем посмотрите, как результат поиска влияет на вывод Байеса и решение MDP.</p>
+      </div>
+      <a class="button" href="/demo">Открыть DarkPhish <span aria-hidden="true">↗</span></a>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="frame masthead">
+      <a class="brand" href="/"><span class="brand-mark" aria-hidden="true"></span>Dropsy</a>
+      <nav class="nav-links" aria-label="Дополнительные ссылки"><a href="/cases">Дела</a><a href="/audit">Аудит</a><a href="/demo">DarkPhish</a><a href="/docs">API</a></nav>
+    </div>
+  </footer>
+</body>
+</html>

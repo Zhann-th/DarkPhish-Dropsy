@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f4ee">
+  <title>Dropsy — дела OSINT</title>
+  <link rel="stylesheet" href="/static/site.css?v=7">
+  <link rel="stylesheet" href="/static/cases.css?v=7">
+  <script defer src="/static/cases.js?v=7"></script>
+</head>
+<body>
+  <a class="skip" href="#main">К содержанию</a>
+  <header class="site-header">
+    <div class="frame masthead">
+      <a class="brand" href="/"><span class="brand-mark" aria-hidden="true"></span>Dropsy</a>
+      <nav class="nav-links" aria-label="Разделы сайта"><a href="/">Обзор</a><a href="/cases" aria-current="page">Дела</a><a href="/audit">Аудит</a><a href="/demo">DarkPhish</a></nav>
+    </div>
+  </header>
+  <main class="frame" id="main">
+    <section class="page-intro">
+      <div>
+        <p class="eyebrow">Рабочее пространство OSINT</p>
+        <h1 class="page-title">Дела</h1>
+        <p class="intro">Сохраняйте ссылки, заметки, скриншоты и снимки аудита по одной теме.</p>
+      </div>
+    </section>
+    <div class="case-layout">
+      <aside class="panel case-sidebar" aria-label="Список дел">
+        <details id="new-case" class="new-case">
+          <summary>Новое дело</summary>
+          <form id="case-form">
+            <label for="new-title">Название</label>
+            <input id="new-title" maxlength="160" required placeholder="Проверка интернет-магазина">
+            <label for="new-description">Описание</label>
+            <textarea id="new-description" rows="3" maxlength="4000"></textarea>
+            <button class="button primary">Создать</button>
+          </form>
+        </details>
+        <nav class="case-list" id="case-list" aria-label="Сохранённые дела"></nav>
+      </aside>
+      <div>
+        <p id="case-status" class="muted" role="status"></p>
+        <section id="case-detail" class="panel case-detail" hidden>
+          <div class="case-heading">
+            <div>
+              <h2 id="case-name"></h2>
+              <p id="case-description" class="muted"></p>
+            </div>
+            <a id="case-audit" class="button" href="/audit">Открыть аудит ↗</a>
+          </div>
+          <details class="material-editor" id="material-editor">
+            <summary>Добавить материал</summary>
+            <form id="material-form">
+              <div class="material-fields">
+                <div>
+                  <label for="material-kind">Тип</label>
+                  <select id="material-kind">
+                    <option value="link">Ссылка</option>
+                    <option value="note">Заметка</option>
+                    <option value="image">Скриншот</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="material-date">Дата наблюдения</label>
+                  <input type="date" id="material-date">
+                </div>
+              </div>
+              <label for="material-title">Название</label>
+              <input id="material-title" required maxlength="200" placeholder="Главная страница магазина">
+              <label for="material-url">Адрес источника</label>
+              <input type="url" id="material-url" required maxlength="2048" placeholder="https://example.com">
+              <div id="material-file-row" hidden>
+                <label for="material-file">Скриншот PNG, JPEG или WebP до 5 МиБ</label>
+                <input type="file" id="material-file" accept="image/png,image/jpeg,image/webp">
+              </div>
+              <label for="material-note">Наблюдение</label>
+              <textarea id="material-note" maxlength="12000" rows="4"></textarea>
+              <button class="button primary">Сохранить материал</button>
+            </form>
+          </details>
+          <div class="material-heading">
+            <h3>Материалы</h3>
+            <label class="sr-only" for="material-search">Поиск по материалам</label>
+            <input type="search" id="material-search" placeholder="Поиск по материалам">
+          </div>
+          <ul class="materials" id="materials"></ul>
+        </section>
+      </div>
+    </div>
+  </main>
+  <footer class="site-footer">
+    <div class="frame masthead">
+      <a class="brand" href="/"><span class="brand-mark" aria-hidden="true"></span>Dropsy</a>
+      <nav class="nav-links" aria-label="Дополнительные ссылки"><a href="/cases">Дела</a><a href="/audit">Аудит</a><a href="/demo">DarkPhish</a><a href="/docs">API</a></nav>
+    </div>
+  </footer>
+</body>
+</html>
