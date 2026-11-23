@@ -7,3 +7,4 @@ venv/
 .venv/
 server.log
 dropsy.log
+.vercel

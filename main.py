@@ -57,3 +57,8 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+# Export app for Vercel / ASGI serverless
+import os
+os.environ.setdefault('DROPSY_HISTORY_DB', '/tmp/history.sqlite3')
+from dropsy.api.server import app

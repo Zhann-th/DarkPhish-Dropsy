@@ -1,69 +1,111 @@
-# Dropsy 7.3 — рабочее пространство OSINT
+# Dropsy 7.3 · DarkPhish — AI Fundamentals Final Project
 
-Dropsy сочетает дела для ручного сбора открытых материалов и аудит для сравнения снимков сайта. В деле можно хранить ссылки, заметки, загруженные скриншоты и результаты аудита. Вкладка DarkPhish для AI Fundamentals связывает поиск, Байеса и MDP на учебном кейсе и ограниченном снимке публичного сайта.
+> **Live Demo:** [https://dropsy-repo.vercel.app/darkphish](https://dropsy-repo.vercel.app/darkphish)  
+> **Student:** Zhanassyl Syrlibayev (`Zhann-th`)  
+> **Course:** AI Fundamentals  
+> **Submission Type:** Individual  
 
-## Запуск
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-009688.svg?style=flat&logo=fastapi)](https://fastapi.tiangolo.com)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![Vercel](https://img.shields.io/badge/deployed_on-Vercel-black.svg?logo=vercel)](https://dropsy-repo.vercel.app/darkphish)
+[![Tests Passing](https://img.shields.io/badge/tests-42%20passed-brightgreen.svg)]()
 
-Требуется Python 3.11 или новее.
+---
+
+## Required Deliverables
+
+| Deliverable | Location / Link |
+|---|---|
+| **Live / Local Demo** | [https://dropsy-repo.vercel.app/darkphish](https://dropsy-repo.vercel.app/darkphish) *(or local `http://127.0.0.1:8000/darkphish`)* |
+| **GitHub Repository** | [https://github.com/Zhann-th/DarkPhish-Dropsy](https://github.com/Zhann-th/DarkPhish-Dropsy) |
+| **5–7 Slide Presentation** | [`docs/darkphish/presentation.pptx`](docs/darkphish/presentation.pptx) (7 slides with diagrams and UI screenshots) |
+| **2–3 Minute Demo Video** | [`docs/darkphish/demo.mp4`](docs/darkphish/demo.mp4) (2:33, voiced and synced narration) |
+| **Technical Report** | [`docs/darkphish/TECHNICAL_REPORT.md`](docs/darkphish/TECHNICAL_REPORT.md) (Complete mathematical formulas and derivations) |
+| **Team Contribution Statement** | [`docs/darkphish/TEAM_CONTRIBUTION.md`](docs/darkphish/TEAM_CONTRIBUTION.md) (Individual submission) |
+| **AI Usage Declaration** | [`docs/darkphish/AI_USAGE_DECLARATION.md`](docs/darkphish/AI_USAGE_DECLARATION.md) (Minimal editorial & synthetic TTS voiceover) |
+| **Project Defense Guide & Q&A** | [`docs/darkphish/DEFENSE.md`](docs/darkphish/DEFENSE.md) (2m problem, 4m demo, 2m topics, 3m Q&A) |
+
+---
+
+## Three AI Topics Implemented
+
+1. **Graph Search (A\*, UCS, BFS, DFS):**
+   - Finds optimal evidence paths on a weighted graph with non-uniform edge costs.
+   - **A\*** uses an admissible heuristic $h(n)$ based on remaining minimum hops and global minimum edge cost ($c_{\min} = 1$). Both A\* and UCS find the optimal cost of 6 (via header review and analyst finding).
+   - **BFS** minimizes hops (2 hops) but selects a higher-cost route (cost 10) through allowlist lookup.
+   - **DFS** follows fixed depth-first order.
+
+2. **Probabilistic Reasoning (Bayesian Sequential Updating):**
+   - Updates the posterior probability $P(\text{Phishing} \mid E)$ sequentially across evidence observations collected along the chosen search route:
+     $$P(H \mid E) = \frac{P(E \mid H) P(H)}{P(E \mid H) P(H) + P(E \mid \neg H) (1 - P(H))}$$
+   - Starting from a prior of $10.0\%$:
+     - Failed header raises it to $28.57\%$.
+     - Analyst finding raises it to $80.95\%$.
+   - Demonstrates how different search routes supply different evidence and alter the final belief.
+
+3. **Sequential Decision Making (Markov Decision Process with Bellman Value Iteration):**
+   - Evaluates three triage actions: **Close**, **Review**, and **Escalate**.
+   - Solves for state values using Bellman value iteration with discount factor $\gamma = 0.9$:
+     $$V(s) = \max_{a} \left[ R(s, a) + \gamma \sum_{s'} P(s' \mid s, a) V(s') \right]$$
+   - At $80.95\%$ posterior probability, **Escalate** achieves the highest Q-score ($+3.714$), driving the automated triage decision. When evidence is missing, probability drops to $28.57\%$, switching the recommendation to **Manual Review**.
+
+---
+
+## How to Run
+
+### Option 1: Live Web Demo (Zero Installation)
+Visit the live Vercel deployment:
+👉 **[https://dropsy-repo.vercel.app/darkphish](https://dropsy-repo.vercel.app/darkphish)**
+
+### Option 2: Local Web Server
+Requires Python 3.11+.
 
 ```bash
+# 1. Clone repository
+git clone https://github.com/Zhann-th/DarkPhish-Dropsy.git
+cd DarkPhish-Dropsy
+
+# 2. Setup virtual environment
 python3 -m venv .venv
 source .venv/bin/activate
-python -m pip install -r requirements.txt
-python main.py --server
+
+# 3. Install dependencies
+pip install -r requirements.txt
+
+# 4. Launch web platform
+python3 main.py --server
 ```
 
-На [главной](http://127.0.0.1:8000/) можно переключить два учебных сравнения и открыть [аудит](http://127.0.0.1:8000/audit). Кнопка **Открыть учебный пример** открывает три синтетические версии одного сайта без запросов к внешнему сайту. Изменения включают смену DNS-адреса, исчезновение CSP, ответ 404, появление новой страницы и восстановление после исправления. [DarkPhish](http://127.0.0.1:8000/darkphish) объединяет учебный кейс и упрощённый режим работы с публичными сайтами. [OpenAPI](http://127.0.0.1:8000/docs) описывает маршруты.
+Open **[http://127.0.0.1:8000/darkphish](http://127.0.0.1:8000/darkphish)** in your browser.
 
-## DarkPhish · AI Fundamentals Final Project
+### Option 3: Command-Line Interface (CLI Benchmarks)
 
-Откройте [DarkPhish](http://127.0.0.1:8000/darkphish). В **Phishing-report example** сравниваются BFS, DFS, UCS и A*, затем выбранный маршрут определяет наблюдения для Байеса и входные данные MDP. Результаты воспроизводятся и без браузера.
+Run the deterministic benchmark pipeline without opening a browser:
 
 ```bash
+# Default run (A* search -> Bayes update to 80.95% -> Escalate action)
 python3 -m dropsy.core.darkphish_course
+
+# Missing evidence scenario (Analyst finding unavailable -> Bayes 28.57% -> Manual Review)
 python3 -m dropsy.core.darkphish_course --scenario missing
+
+# BFS search algorithm (takes 2-hop route -> Bayes 6.6% -> Low Priority)
+python3 -m dropsy.core.darkphish_course --algorithm bfs
 ```
 
-Для **Public website URL** введите публичный HTTP(S)-адрес и нажмите **Collect website**. DarkPhish собирает до шести страниц и наблюдаемые ссылки. Вес перехода равен 1 для цели с HTTP 2xx и 2 для остальных статусов. Выберите страницу назначения и метод, затем нажмите **Run analysis**. Повторный расчёт работает на уже собранных данных.
+### Option 4: Run Test Suite
 
-Гипотеза в режиме сайта означает приоритет дополнительной ручной проверки по учебной модели. HTTP-ответы наблюдаемые, вероятности и награды заданы для демонстрации. При недоступной стартовой странице расчёт останавливается. Одна доступная страница даёт маршрут с нулём переходов. Описание модели и план защиты находятся в `docs/darkphish/`.
-
-## Дела
-
-Откройте [дела](http://127.0.0.1:8000/cases), создайте дело и добавьте ссылку, заметку или скриншот. Обычную ссылку можно сохранить по URL без проверки сайта. Для материалов можно указать адрес источника и дату наблюдения. Скриншоты загружаются вручную в PNG, JPEG или WebP до 5 МиБ.
-
-Чтобы добавить доказательства из аудита, откройте аудит из дела, соберите или загрузите снимок и выберите **Добавить снимок в дело**. Снимок также попадает в историю. Из дела он открывается по прямой ссылке, после чего в истории можно выбрать второй снимок того же актива и сравнить их. Дела и материалы хранятся локально в той же базе SQLite, что и история снимков.
-
-## Веб-сбор и локальные папки
-
-Запустите `python3 main.py --server` и укажите публичный HTTP(S)-адрес в разделе «Аудит». Список доменов заранее задавать не нужно. Сервер по умолчанию слушает только loopback. Эта версия предназначена для локального запуска, API без пользовательской аутентификации.
-
-Если нужно ограничить веб-сбор конкретными адресами, задайте `DROPSY_AUDIT_ORIGINS` со списком origin через запятую. Схема и поддомены учитываются отдельно. Если задавали этот список раньше и хотите снова разрешить публичные адреса по умолчанию, снимите переменную командой `unset DROPSY_AUDIT_ORIGINS` и перезапустите сервер.
-
-Для инвентаризации локальных файлов явно задайте `DROPSY_SCAN_ROOT` с путём к корневой папке. Затем укажите в интерфейсе путь вида `./` или `./docs`.
-
-- **Веб-сбор** проверяет публичную DNS-резолюцию, TLS с верификацией и выбранные HTTP-заголовки. Просматривает до 40 доступных по ссылкам страниц, использует только стандартный HTTP(S) порт и остаётся в том же origin. Редиректы видны по HTTP-статусу. Переходы по редиректам, URLs с query из HTML, JavaScript, аутентификация и активные проверки портов в аудит не входят. Query и фрагмент стартового URL отбрасываются.
-- **Локальная инвентаризация** возвращает относительные имена, размер прочитанного образца и SHA-256 первых 64 КиБ поддерживаемых текстовых файлов. Скрытые файлы, типовые каталоги зависимостей и символические ссылки пропускаются. Содержимое файлов в ответ не включается.
-- **Граф структуры** строится по страницам и ссылкам выбранного снимка. Стрелка направлена от страницы со ссылкой к её цели. Можно выбрать узел, посмотреть HTTP-статус и открыть сохранённые поля. На графике до 80 страниц, остальные доступны в доказательствах.
-- **Замечания** привязаны к наблюдаемым ответам. Сканер проверяет настройки HTTPS, признаки истечения TLS, HSTS, CSP, защиту от встраивания и ответы 404/410 в посещённой части сайта. Наличие заголовков не оценивает корректность всех директив. В отчёте есть отметка о неполном покрытии при ограничении сбора, ошибках или усечённых образцах.
-- **Сравнение** показывает новые, изменившиеся и ненаблюдавшиеся записи. Ненаблюдавшаяся страница не считается удалённой. Снимки должны совпадать по области, режиму и происхождению. SHA-256 проверяет целостность содержимого, но не является подписью или удостоверением источника.
-- **Экспорт** скачивает JSON-снимок и Markdown-отчёт. Снимок можно загрузить снова как текущий или как эталон. Снимки также можно сохранить кнопкой «Сохранить снимок».
-
-## История снимков
-
-Сделайте аудит или импортируйте JSON и нажмите **Сохранить снимок**. Dropsy сохранит его в SQLite и покажет актив в выпадающем списке. Шкала переключает текущую версию, а поля «Сравнить с» и «Открыть версию» позволяют выбрать любые два снимка одного актива. В изменённых записях видны значения полей до и после.
-
-История локальная, сохраняется между перезапусками и обновляется при явном сохранении снимка. По умолчанию используется `~/.dropsy/history.sqlite3`. Для отдельного профиля задайте `DROPSY_HISTORY_DB` с путём к другому файлу. Учебная история не включается в архив наблюдений.
-
-## Анализ замечаний
-
-По умолчанию кнопка **Объяснить результаты** формирует сводку локально. Для Gemini задайте `GEMINI_API_KEY` и `DROPSY_GEMINI_MODEL` в окружении серверного процесса. При таком выборе на внешний сервис передаётся сводка замечаний выбранного снимка. Если вызов не удался, интерфейс обозначает локальный ответ.
-
-## Проверки
+Verify all 42 automated unit tests:
 
 ```bash
-python main.py --test
-python main.py --demo
+python3 -m unittest discover -s tests
 ```
 
-`dropsy/core/universal_scanner.py` собирает данные, `dropsy/core/audit.py` формирует снимки и сравнивает их, `dropsy/api/server.py` предоставляет API, а `dropsy/static/audit.*` реализует новую консоль. Файлы в `docs/` относятся к исходной учебной версии DarkPhish. Их формулировки, замеры и сценарий презентации отражают предыдущую версию.
+---
+
+## Defense Guide Summary
+
+- **Problem & Objectives (2 min):** Triage phishing reports with incomplete evidence while balancing risk of missed incidents vs unnecessary escalation costs.
+- **Live Demo (3–5 min):** Demonstrate A\* (cost 6) $\rightarrow$ Bayes update ($80.95\%$) $\rightarrow$ MDP Escalate. Toggle "Analyst finding unavailable" to show switch to Manual Review. Switch to BFS to show 2-hop route with cost 10 and Low Priority.
+- **Three AI Topics (2 min):** Explain graph search heuristic admissibility, conditional independence in sequential Bayes, and Bellman discount factor $\gamma = 0.9$ in MDP.
+- **Q&A (up to 3 min):** Reference the prepared responses in [`docs/darkphish/DEFENSE.md`](docs/darkphish/DEFENSE.md).
