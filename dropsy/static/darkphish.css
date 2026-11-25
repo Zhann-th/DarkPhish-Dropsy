@@ -53,3 +53,11 @@ footer{padding:24px 0;color:var(--muted)}
 #mail-links-panel{margin-bottom:15px}
 #mail-links td{overflow-wrap:anywhere;white-space:pre-line;min-width:105px}
 #mail-links td:nth-child(-n+3){width:25%}
+
+.graph-tools{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:end;margin-top:15px}
+.graph-tools input{min-height:34px;accent-color:var(--green)}
+.graph-tools output{min-width:4em;margin-bottom:9px;font-variant-numeric:tabular-nums}
+.graph-node.expanded:not(.selected) rect{fill:#ebf4fa;stroke:#5486a2}
+.graph-node.current rect{stroke:#286587;stroke-width:3}
+#mail-audit-panel{margin-bottom:15px}
+#sender-details td,#mail-audit-pages td{white-space:pre-line;overflow-wrap:anywhere}

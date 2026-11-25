@@ -53,3 +53,49 @@ class MailAnalysisTests(TestCase):
                 result = analyze_mail(url="https://service.example/", resolve=True)
         self.assertIsNone(result["links"][0]["final"])
         self.assertIn("405", result["links"][0]["state"])
+
+    def test_audit_joins_real_edges_and_all_methods_search_same_goal(self):
+        root = "https://service.example/"
+        urls = [root, root+"heavy", root+"short-a", root+"short-b", root+"goal"]
+        pages = [
+            {"url": url, "path": url.removeprefix(root) or "/", "status": 200,
+             "size": 60_000 if i == 1 else 1024, "truncated": False}
+            for i, url in enumerate(urls)
+        ]
+        observed = {
+            "scope": root, "target_response": pages[0], "pages": pages,
+            "ssl_info": {"issuer": "Example test issuer"}, "errors": [], "limit_reached": False,
+            "page_links": [{"source": urls[a], "target": urls[b]}
+                           for a, b in ((0, 1), (0, 2), (1, 4), (2, 3), (3, 4), (4, 0))],
+        }
+        with patch.object(UniversalOSINTScanner, "_resolve", return_value=["1.1.1.1"]):
+            with patch.object(UniversalOSINTScanner, "_safe_fetch", return_value={"status": 200}):
+                with patch.object(UniversalOSINTScanner, "scan_web", return_value=observed) as crawl:
+                    result = analyze_mail(url=root, resolve=True, audit=True)
+        crawl.assert_called_once_with(root)
+        self.assertEqual(result["goal"], "audit-4")
+        self.assertEqual(result["site_audit"]["edges"], observed["page_links"])
+        self.assertEqual(result["routes"]["bfs"]["path"][-2:], ("audit-1", "audit-4"))
+        self.assertEqual(result["routes"]["astar"]["path"][-3:], ("audit-2", "audit-3", "audit-4"))
+        self.assertEqual(result["routes"]["astar"]["cost"], result["routes"]["ucs"]["cost"])
+        self.assertLess(result["routes"]["astar"]["cost"], result["routes"]["bfs"]["cost"])
+
+    def test_sender_domains_and_unverified_auth_claims_are_distinct(self):
+        raw = b"From: Company <info@other.example>\nReply-To: help@another.example\nAuthentication-Results: example; dmarc=pass\nSubject: Test\n\nHi there."
+        result = analyze_mail(encoded=b64encode(raw).decode(), expected_domain="company.example")
+        self.assertEqual(result["sender"]["authentication_claims"], ["example; dmarc=pass"])
+        self.assertEqual([step["node"] for step in result["belief"]["steps"]], ["sender", "reply"])
+
+    def test_audited_password_field_refines_one_domain_signal(self):
+        root = "https://outside.example/"
+        landing = {"url": root, "path": "/", "status": 200, "size": 54,
+                   "truncated": False, "password_input": True}
+        observed = {"scope": root, "target_response": landing, "pages": [landing],
+                    "page_links": [], "ssl_info": None, "errors": [], "limit_reached": False}
+        with patch.object(UniversalOSINTScanner, "_resolve", return_value=["1.1.1.1"]):
+            with patch.object(UniversalOSINTScanner, "_safe_fetch", return_value={"status": 200}):
+                with patch.object(UniversalOSINTScanner, "scan_web", return_value=observed):
+                    result = analyze_mail(url=root, expected_domain="service.example", resolve=True, audit=True)
+        self.assertEqual(len(result["belief"]["steps"]), 1)
+        self.assertEqual(result["belief"]["steps"][0]["node"], "audit-0")
+        self.assertIn("password field", result["belief"]["steps"][0]["signal"])

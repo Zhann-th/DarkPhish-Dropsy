@@ -63,7 +63,7 @@ function websitePositions(graph, source) {
   return positions;
 }
 
-function drawGraph(data, route) {
+function drawGraph(data, route, expanded, current) {
   const {graph, labels} = data;
   const positions = data.source === "synthetic" ? fixturePositions : websitePositions(graph, data.start);
   const svg=byId("graph");
@@ -72,6 +72,7 @@ function drawGraph(data, route) {
   const width = Math.max(670, Math.max(...points.map(([x]) => x)) + 85);
   const height = Math.max(data.source === "synthetic" ? 330 : 135, Math.max(...points.map(([,y]) => y)) + 45);
   svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+  svg.style.minWidth = Math.max(590, Math.round(width * .78)) + "px";
   const defs=svgElement("defs",{});
   const marker=svgElement("marker",{id:"arrow",markerWidth:8,markerHeight:8,refX:7,refY:4,orient:"auto"});
   marker.append(svgElement("path",{d:"M0 0 L8 4 L0 8Z",fill:"#477267"}));
@@ -94,7 +95,11 @@ function drawGraph(data, route) {
     }
   }
   for(const [key,[x,y]] of Object.entries(positions)) {
-    const group=svgElement("g",{class:route.includes(key)?"graph-node selected":"graph-node"});
+    const classes = ["graph-node"];
+    if (route.includes(key)) classes.push("selected");
+    if (expanded.has(key)) classes.push("expanded");
+    if (key === current) classes.push("current");
+    const group=svgElement("g",{class:classes.join(" ")});
     group.append(svgElement("rect",{x:x-69,y:y-18,width:138,height:36,rx:3}));
     const label=svgElement("text",{x,y:y+4,"text-anchor":"middle"});
     const fullLabel = labels[key];
@@ -105,13 +110,36 @@ function drawGraph(data, route) {
     svg.append(group);
   }
 }
+let graphData = null;
+function updateGraph(reset = false) {
+  if (!graphData) return;
+  const data = graphData;
+  const method = byId("graph-method").value;
+  const route = data.routes[method];
+  const slider = byId("graph-step");
+  slider.max = route.trace.length;
+  if (reset) slider.value = route.trace.length;
+  const step = Number(slider.value);
+  const visited = route.trace.slice(0, step).map(row => row.node);
+  drawGraph(data, route.path, new Set(visited), visited.at(-1));
+  byId("graph-count").textContent = step + " / " + route.trace.length;
+  byId("route-summary").textContent = displayNames[method] + " · cost " + route.cost + " · " + route.trace.length + " expanded";
+  byId("graph-note").textContent = "Green shows the route to the same goal. Blue marks expanded nodes. The probability and recommendation below use "
+    + displayNames[data.method] + " from Run analysis.";
+  const weighted = method === "ucs" || method === "astar";
+  table("trace", weighted ? ["Step","Node","g","h","f"] : ["Step","Node","Accumulated route cost"],
+    route.trace.map((row,i) => weighted ? [i+1,data.labels[row.node],row.g,row.h,row.f] : [i+1,data.labels[row.node],row.g]), step-1);
+}
+
 function fill(data) {
-  const route=data.routes[data.method];
-  drawGraph(data, route.path);
+  graphData = data;
+  byId("graph-method").value = data.method;
+  updateGraph(true);
   const observed = data.source === "observed";
   const mail = data.source === "mail";
   byId("mail-links-panel").hidden = !mail;
-  if (mail) showMailLinks(data);
+  byId("mail-audit-panel").hidden = !data.site_audit;
+  if (mail) showMailDetails(data);
   byId("context").textContent = observed
     ? data.url + " · " + data.pages.length + " observed pages" + (data.partial ? " · partial coverage" : "")
       + (data.start === data.goal ? " · route contains only the starting page" : "")
@@ -133,14 +161,10 @@ function fill(data) {
     selector.value = data.goal;
     byId("destination-field").hidden = false;
   }
-  byId("route-summary").textContent=displayNames[data.method]+" · cost "+route.cost+" · "+route.trace.length+" expanded";
   const entries=Object.entries(data.routes);
   table("comparison",["Method","Cost","Hops","Expanded","Route"],entries.map(([key,result])=>
     [displayNames[key],result.cost,result.path.length-1,result.trace.length,result.path.map(id=>data.labels[id]).join(" → ")]),
     entries.findIndex(([key])=>key===data.method));
-  const weighted=["ucs","astar"].includes(data.method);
-  table("trace", weighted?["Node","g","h","f"]:["Node","Accumulated route cost"],
-    route.trace.map(row=>weighted?[data.labels[row.node],row.g,row.h,row.f]:[data.labels[row.node],row.g]));
   const belief=data.belief;
   const explainScore = !mail || data.has_signals;
   byId("posterior").textContent=explainScore ? percent(belief.initial)+" → "+percent(belief.posterior) : "Insufficient evidence";
@@ -158,7 +182,28 @@ function fill(data) {
     [name,n3(row.reward),row.pending_probability,n3(row.q)]),actions.findIndex(([name])=>name===decision.recommended));
   byId("results").hidden=false;
 }
-function showMailLinks(data) {
+function showMailDetails(data) {
+  const sender = data.sender;
+  byId("mail-sender").hidden = !sender || !(sender.from || sender.reply_to || sender.authentication_claims.length);
+  if (!byId("mail-sender").hidden) {
+    table("sender-details", ["Header", "Value in uploaded file"], [
+      ["From", sender.from || "—"], ["Reply-To", sender.reply_to || "—"],
+      ["Authentication-Results (unverified)", sender.authentication_claims.join("\n") || "—"],
+    ], -1);
+  }
+  const audit = data.site_audit;
+  if (audit) {
+    byId("mail-audit-note").textContent = audit.state + (audit.root ? " · " + audit.root : "")
+      + (audit.partial ? " · Partial coverage" : "")
+      + (audit.pages ? " · Edge weights estimate reading effort from page size and HTTP status." : "")
+      + (audit.tls?.issuer ? " · TLS issuer: " + audit.tls.issuer : "");
+    if (audit.pages) {
+      table("mail-audit-pages", ["Page", "HTTP", "Password field", "Observed internal links"], audit.pages.map(page => [
+        page.path, page.status, page.password_input ? "Observed" : "—",
+        audit.edges.filter(edge => edge.source === page.url).map(edge => new URL(edge.target).pathname).join("\n") || "—",
+      ]), -1);
+    } else byId("mail-audit-pages").replaceChildren();
+  }
   byId("mail-links-note").textContent = data.links.length
     ? "Each row shows the original URL and observed HTTP hops. The highlighted row supplies the route below."
       + (data.truncated_links ? " Only the first four distinct links are included." : "")
@@ -221,6 +266,7 @@ async function analyzeCurrent() {
       encoded: await readMailFile(byId("mail-file").files[0]),
       expected_domain: byId("mail-domain").value,
       resolve: byId("mail-network").checked,
+      audit: byId("mail-audit").checked,
     });
     fill(result);
     return;
@@ -256,6 +302,13 @@ async function run(collect = false) {
   }
 }
 
+byId("graph-method").addEventListener("change", () => updateGraph(true));
+byId("graph-step").addEventListener("input", () => updateGraph());
+byId("mail-network").addEventListener("change", () => {
+  const audit = byId("mail-audit");
+  audit.disabled = !byId("mail-network").checked;
+  if (audit.disabled) audit.checked = false;
+});
 byId("controls").addEventListener("submit", event => {event.preventDefault(); run();});
 byId("site-controls").addEventListener("submit", event => {event.preventDefault(); run(true);});
 byId("mode").addEventListener("change", () => {

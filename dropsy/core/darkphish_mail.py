@@ -15,6 +15,7 @@ from .universal_scanner import UniversalOSINTScanner
 
 MAX_LINKS = 4
 MAX_HOPS = 4
+AUDIT_PAGES = 5
 MAX_EML_BYTES = 512 * 1024
 MAX_TEXT = 20_000
 LINKS = re.compile(r"https?://[^\s<>\"']+", re.I)
@@ -50,7 +51,7 @@ class MailHTML(HTMLParser):
 
 def extract_message(encoded):
     if not encoded:
-        return "", "", "", []
+        return "", "", "", [], []
     try:
         raw = base64.b64decode(encoded, validate=True)
     except (ValueError, binascii.Error) as exc:
@@ -88,7 +89,11 @@ def extract_message(encoded):
     try:
         read_body(message)
         extracted = " ".join([str(message.get("Subject", "")), *text])[:MAX_TEXT]
-        return extracted, parseaddr(str(message.get("From", "")))[1], parseaddr(str(message.get("Reply-To", "")))[1], links
+        return (
+            extracted, parseaddr(str(message.get("From", "")))[1],
+            parseaddr(str(message.get("Reply-To", "")))[1], links,
+            [str(value)[:500] for value in message.get_all("Authentication-Results", [])[:3]],
+        )
     except (ValueError, RecursionError) as exc:
         raise ValueError("The .eml file could not be read.") from exc
 
@@ -155,8 +160,11 @@ def domain_matches(host, expected):
     return host == expected or host.endswith("." + expected)
 
 
-def analyze_mail(text="", url="", encoded="", expected_domain="", method="astar", resolve=False, origins=None):
-    mail_text, sender, reply, html_links = extract_message(encoded)
+def analyze_mail(text="", url="", encoded="", expected_domain="", method="astar", resolve=False,
+                 audit=False, origins=None):
+    if audit and not resolve:
+        raise ValueError("Enable the HTTP check to audit the confirmed destination.")
+    mail_text, sender, reply, html_links, authentication = extract_message(encoded)
     text = (text + "\n" + mail_text)[:MAX_TEXT]
     if not (text.strip() or url.strip() or html_links):
         raise ValueError("Paste text, enter a link, or upload an .eml with readable content.")
@@ -193,7 +201,11 @@ def analyze_mail(text="", url="", encoded="", expected_domain="", method="astar"
         tail = node(tail, "urgent", "Urgent wording", ("Urgency or threat wording detected", .60, .35))
     if REQUEST.search(text) and CREDENTIAL.search(text):
         tail = node(tail, "credential", "Credential request", ("Request wording and credential terms both appear", .75, .12))
-    if "@" in sender and "@" in reply and sender.rsplit("@", 1)[1].lower() != reply.rsplit("@", 1)[1].lower():
+    sender_domain = sender.rsplit("@", 1)[-1].lower().rstrip(".") if "@" in sender else ""
+    reply_domain = reply.rsplit("@", 1)[-1].lower().rstrip(".") if "@" in reply else ""
+    if expected and sender_domain and not domain_matches(sender_domain, expected):
+        tail = node(tail, "sender", "From domain", ("From domain differs from the expected domain", .60, .22))
+    if sender_domain and reply_domain and sender_domain != reply_domain:
         tail = node(tail, "reply", "Reply-To domain", ("From and Reply-To domains differ", .55, .18))
 
     scanner = UniversalOSINTScanner(timeout=1.6)
@@ -214,13 +226,38 @@ def analyze_mail(text="", url="", encoded="", expected_domain="", method="astar"
         reports.append({"input": target, "index": i, "goal": parent, **found})
 
     goals = [row["goal"] for row in reports] or [tail]
-    # One path per candidate link. The selected method supplies the evidence
-    # for each score, then the highest-scoring route gets the detailed policy.
     scored = [update_belief(search(method, graph, "mail", goal)["path"], signals) for goal in goals]
     chosen = max(range(len(goals)), key=lambda i: scored[i]["posterior"])
-    result = _pipeline(method, graph, labels, signals, "mail", goals[chosen])
     for row, belief in zip(reports, scored):
         row["score"] = belief["posterior"] if belief["steps"] else None
+    goal = goals[chosen]
+    audit_result = None
+    if audit:
+        target = reports[chosen]["final"] if reports else None
+        audit_result = {"state": "No confirmed destination to audit."}
+        if target:
+            try:
+                observed = UniversalOSINTScanner(timeout=1.6, max_pages=AUDIT_PAGES).scan_web(target)
+            except (ValueError, OSError, http.client.HTTPException):
+                audit_result = {"state": "Destination audit could not be collected."}
+            else:
+                if observed["target_response"]:
+                    landing = observed["target_response"]
+                    if (goal in signals and landing.get("password_input")
+                            and not urlsplit(target).query):
+                        signals.pop(goal)
+                        signals["audit-0"] = ("Unexpected destination domain contains a password field", .78, .12)
+                    goal = attach_audit(graph, labels, goal, observed)
+                    audit_result = {
+                        "state": "Observed site structure", "root": observed["scope"],
+                        "partial": bool(observed["errors"] or observed["limit_reached"]
+                                        or any(page["truncated"] for page in observed["pages"])),
+                        "tls": observed["ssl_info"], "pages": observed["pages"],
+                        "edges": observed["page_links"],
+                    }
+                else:
+                    audit_result = {"state": "Audit start page did not return a usable response."}
+    result = _pipeline(method, graph, labels, signals, "mail", goal)
     has_signals = bool(result["belief"]["steps"])
     review_reason = None
     if not has_signals:
@@ -228,4 +265,36 @@ def analyze_mail(text="", url="", encoded="", expected_domain="", method="astar"
     elif result["decision"]["recommended"] == "Close as low priority" and any(not row["final"] for row in reports):
         review_reason = "destination incomplete"
     return {**result, "source": "mail", "links": reports, "selected_link": chosen if reports else None,
-            "has_signals": has_signals, "review_reason": review_reason, "truncated_links": len(candidates) > MAX_LINKS}
+            "has_signals": has_signals, "review_reason": review_reason, "truncated_links": len(candidates) > MAX_LINKS,
+            "site_audit": audit_result,
+            "sender": {"from": sender, "reply_to": reply, "authentication_claims": authentication}}
+
+
+def attach_audit(graph, labels, parent, observed):
+    """Connect the evidence chain to actual same-origin hyperlink edges."""
+    pages = observed["pages"]
+    ids = {page["url"]: f"audit-{i}" for i, page in enumerate(pages)}
+    root = ids[observed["scope"]]
+    graph[parent].append((root, 1))
+    for page in pages:
+        key = ids[page["url"]]
+        labels[key] = f'{page["path"]} · {page["status"]}'
+        graph[key] = []
+    # Weight approximates reading effort, not phishing risk or response time.
+    costs = {
+        ids[page["url"]]: 1 + min(3, page["size"] // 16_384)
+        + int(not 200 <= page["status"] < 300)
+        for page in pages
+    }
+    for edge in observed["page_links"]:
+        source, target = ids[edge["source"]], ids[edge["target"]]
+        graph[source].append((target, costs[target]))
+    # When pages are equally far, prefer a destination with more observed incoming links.
+    incoming = {url: 0 for url in ids}
+    for edge in observed["page_links"]:
+        incoming[edge["target"]] += 1
+    candidates = (
+        (len(search("bfs", graph, root, key)["path"]), incoming[url], url, key)
+        for url, key in ids.items()
+    )
+    return max(candidates)[-1]

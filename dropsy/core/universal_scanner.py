@@ -25,10 +25,13 @@ class _PageParser(HTMLParser):
         self.links = []
         self.title = []
         self.in_title = False
+        self.password_input = False
 
     def handle_starttag(self, tag, attrs):
         if tag == "title":
             self.in_title = True
+        if tag == "input" and (dict(attrs).get("type") or "").lower() == "password":
+            self.password_input = True
         if tag == "a" and len(self.links) < 150:
             href = dict(attrs).get("href")
             if href:
@@ -221,6 +224,7 @@ class UniversalOSINTScanner:
                     "title": " ".join(" ".join(parser.title).split())[:160],
                     "content_type": response["content_type"], "headers": response.get("headers", {}),
                     "size": len(response["body"]), "truncated": response["truncated"],
+                    "password_input": parser.password_input,
                 })
                 for href in parser.links:
                     try:

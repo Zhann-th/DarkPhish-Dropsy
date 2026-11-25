@@ -1,4 +1,4 @@
-# Dropsy 7.4 · DarkPhish — AI Fundamentals Final Project
+# Dropsy 7.5 · DarkPhish — AI Fundamentals Final Project
 
 > **Live Demo:** [https://dropsy-repo.vercel.app/darkphish](https://dropsy-repo.vercel.app/darkphish)  
 > **Student:** Zhanassyl Syrlibayev (`Zhann-th`)  
@@ -8,7 +8,7 @@
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-009688.svg?style=flat&logo=fastapi)](https://fastapi.tiangolo.com)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![Vercel](https://img.shields.io/badge/deployed_on-Vercel-black.svg?logo=vercel)](https://dropsy-repo.vercel.app/darkphish)
-[![Tests Passing](https://img.shields.io/badge/tests-46%20passed-brightgreen.svg)]()
+[![Tests Passing](https://img.shields.io/badge/tests-49%20passed-brightgreen.svg)]()
 
 ---
 
@@ -19,7 +19,7 @@
 | **Live / Local Demo** | [https://dropsy-repo.vercel.app/darkphish](https://dropsy-repo.vercel.app/darkphish) *(or local `http://127.0.0.1:8000/darkphish`)* |
 | **GitHub Repository** | [https://github.com/Zhann-th/DarkPhish-Dropsy](https://github.com/Zhann-th/DarkPhish-Dropsy) |
 | **5–7 Slide Presentation** | [`docs/darkphish/presentation.pptx`](docs/darkphish/presentation.pptx) (7 slides with diagrams and UI screenshots) |
-| **2–3 Minute Demo Video** | [`docs/darkphish/demo.mp4`](docs/darkphish/demo.mp4) (2:33, voiced and synced narration) |
+| **2–3 Minute Demo Video** | [`docs/darkphish/demo.mp4`](docs/darkphish/demo.mp4) (2:30, voiced and synced narration) |
 | **Technical Report** | [`docs/darkphish/TECHNICAL_REPORT.md`](docs/darkphish/TECHNICAL_REPORT.md) (Complete mathematical formulas and derivations) |
 | **Team Contribution Statement** | [`docs/darkphish/TEAM_CONTRIBUTION.md`](docs/darkphish/TEAM_CONTRIBUTION.md) (Individual submission) |
 | **AI Usage Declaration** | [`docs/darkphish/AI_USAGE_DECLARATION.md`](docs/darkphish/AI_USAGE_DECLARATION.md) (Minimal editorial & synthetic TTS voiceover) |
@@ -47,12 +47,12 @@
    - Evaluates three triage actions: **Close**, **Review**, and **Escalate**.
    - Solves for state values using Bellman value iteration with discount factor $\gamma = 0.9$:
      $$V(s) = \max_{a} \left[ R(s, a) + \gamma \sum_{s'} P(s' \mid s, a) V(s') \right]$$
-   - At $80.95\%$ posterior probability, **Escalate** achieves the highest Q-score ($+3.714$), driving the automated triage decision. When evidence is missing, probability drops to $28.57\%$, switching the recommendation to **Manual Review**.
+   - At $80.95\%$ posterior probability, **Escalate** achieves the highest Q-score ($+3.7.5$), driving the automated triage decision. When evidence is missing, probability drops to $28.57\%$, switching the recommendation to **Manual Review**.
 
-### New in Dropsy 7.4 · DarkPhish Mail & Link Inspector
+### New in Dropsy 7.5 · DarkPhish Mail & Link Inspector
 - Support for parsing real `.eml` emails, raw email text, and URL links with heuristic multi-hop search, Bayesian aggregation, and Bellman triage scoring.
 - Added sample emails: [`docs/darkphish/examples/ordinary.eml`](docs/darkphish/examples/ordinary.eml) and [`docs/darkphish/examples/suspicious.eml`](docs/darkphish/examples/suspicious.eml).
-- Total unit tests expanded to 46.
+- Total unit tests expanded to 49.
 
 ---
 
@@ -100,7 +100,7 @@ python3 -m dropsy.core.darkphish_course --algorithm bfs
 
 ### Option 4: Run Test Suite
 
-Verify all 46 automated unit tests:
+Verify all 49 automated unit tests:
 
 ```bash
 python3 -m unittest discover -s tests

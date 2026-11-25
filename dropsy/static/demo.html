@@ -6,8 +6,8 @@
 <title>DarkPhish | Dropsy AI Fundamentals</title>
 <link rel="icon" href="/static/dropsy-symbol.png" type="image/png">
 <link rel="stylesheet" href="/static/site.css?v=7.4.1">
-<link rel="stylesheet" href="/static/darkphish.css?v=7.4">
-<script src="/static/darkphish.js?v=7.4" defer></script>
+<link rel="stylesheet" href="/static/darkphish.css?v=7.5">
+<script src="/static/darkphish.js?v=7.5" defer></script>
 </head>
 <body>
 <header class="site-header">
@@ -30,8 +30,9 @@
       <label>Email text <textarea id="mail-text" rows="4" maxlength="20000" placeholder="Paste the message here"></textarea></label>
       <label>Original email (.eml) <input id="mail-file" type="file" accept=".eml,message/rfc822"></label>
       <label>Link to check <input id="mail-url" type="text" inputmode="url" maxlength="2048" placeholder="https://example.org/account"></label>
-      <label>Expected domain (optional) <input id="mail-domain" type="text" maxlength="253" placeholder="example.org"></label>
+      <label>Expected sender and link domain (optional) <input id="mail-domain" type="text" maxlength="253" placeholder="example.org"></label>
       <label class="mail-opt-in"><input id="mail-network" type="checkbox"><span>Check HTTP redirects. Link hosts receive a request.</span></label>
+      <label class="mail-opt-in"><input id="mail-audit" type="checkbox" disabled><span>Audit the confirmed destination and up to five same-origin pages in total.</span></label>
     </section>
     <form id="controls">
       <label>Search method<select id="method"><option value="astar">A*</option><option value="ucs">Uniform Cost Search</option><option value="bfs">Breadth-first search</option><option value="dfs">Depth-first search</option></select></label>
@@ -48,12 +49,24 @@
   <h2 id="mail-links-heading">Link destinations</h2>
   <p id="mail-links-note" class="muted"></p>
   <div id="mail-links"></div>
+  <details id="mail-sender" hidden><summary>Sender headers from the .eml</summary><div id="sender-details"></div></details>
+</section>
+<section id="mail-audit-panel" class="panel" aria-labelledby="mail-audit-heading" hidden>
+  <h2 id="mail-audit-heading">Destination audit</h2>
+  <p id="mail-audit-note" class="muted"></p>
+  <div id="mail-audit-pages"></div>
 </section>
 <section class="panel" aria-labelledby="graph-heading">
   <div class="section-head"><div><p class="label">Search</p><h2 id="graph-heading">Evidence route</h2></div><p id="route-summary"></p></div>
+  <div class="graph-tools">
+    <label>Preview search method <select id="graph-method"><option value="bfs">BFS</option><option value="dfs">DFS</option><option value="ucs">UCS</option><option value="astar">A*</option></select></label>
+    <label>Expanded nodes <input id="graph-step" type="range" min="0" value="0"></label>
+    <output id="graph-count" for="graph-step"></output>
+  </div>
+  <p id="graph-note" class="muted"></p>
   <div class="graph-scroll"><svg id="graph" viewBox="0 0 890 330" aria-label="Directed evidence graph with weighted edges"></svg></div>
   <div id="comparison"></div>
-  <details><summary>Expansion trace for selected method</summary><div id="trace"></div></details>
+  <details><summary>Expansion trace for previewed method</summary><div id="trace"></div></details>
 </section>
 <div class="pair">
   <section class="panel" aria-labelledby="belief-heading">
