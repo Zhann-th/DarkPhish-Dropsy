@@ -27,7 +27,7 @@ from dropsy.data.osint_cases import AVAILABLE_CASES, build_case_graph
 app = FastAPI(
     title="Dropsy Asset Audit API",
     description="Web asset evidence, versioned snapshots, and an educational AI case.",
-    version="7.5.0"
+    version="7.5.1"
 )
 
 # Initialize global active case graph (Operation DarkPhish by default)

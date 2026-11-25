@@ -1,4 +1,4 @@
-# Dropsy 7.5 · DarkPhish — AI Fundamentals Final Project
+# Dropsy 7.5.1 · DarkPhish — AI Fundamentals Final Project
 
 > **Live Demo:** [https://dropsy-repo.vercel.app/darkphish](https://dropsy-repo.vercel.app/darkphish)  
 > **Student:** Zhanassyl Syrlibayev (`Zhann-th`)  
@@ -47,9 +47,9 @@
    - Evaluates three triage actions: **Close**, **Review**, and **Escalate**.
    - Solves for state values using Bellman value iteration with discount factor $\gamma = 0.9$:
      $$V(s) = \max_{a} \left[ R(s, a) + \gamma \sum_{s'} P(s' \mid s, a) V(s') \right]$$
-   - At $80.95\%$ posterior probability, **Escalate** achieves the highest Q-score ($+3.7.5$), driving the automated triage decision. When evidence is missing, probability drops to $28.57\%$, switching the recommendation to **Manual Review**.
+   - At $80.95\%$ posterior probability, **Escalate** achieves the highest Q-score ($+3.7.5.1$), driving the automated triage decision. When evidence is missing, probability drops to $28.57\%$, switching the recommendation to **Manual Review**.
 
-### New in Dropsy 7.5 · DarkPhish Mail & Link Inspector
+### New in Dropsy 7.5.1 · DarkPhish Mail & Link Inspector
 - Support for parsing real `.eml` emails, raw email text, and URL links with heuristic multi-hop search, Bayesian aggregation, and Bellman triage scoring.
 - Added sample emails: [`docs/darkphish/examples/ordinary.eml`](docs/darkphish/examples/ordinary.eml) and [`docs/darkphish/examples/suspicious.eml`](docs/darkphish/examples/suspicious.eml).
 - Total unit tests expanded to 49.

@@ -1,8 +1,6 @@
 "use strict";
 
 const graphPageLimit = 80;
-const graphNodeWidth = 176;
-const graphNodeHeight = 58;
 
 function graphModel(snapshot) {
   const records = snapshot.records.filter(record => record.category === "page");
@@ -10,61 +8,44 @@ function graphModel(snapshot) {
   const root = records.find(record => record.key === snapshot.scope) || records[0];
   const visible = [root, ...records.filter(record => record !== root)].slice(0, graphPageLimit);
   const pages = new Map(visible.map(record => [record.key, {...record, incoming: [], outgoing: []}]));
-  const links = [];
+  let count = 0;
   for (const record of snapshot.records) {
     if (record.category !== "link") continue;
     const [source, target] = record.key.split(" → ");
     if (source === target || !pages.has(source) || !pages.has(target)) continue;
     pages.get(source).outgoing.push(target);
     pages.get(target).incoming.push(source);
-    links.push({source, target});
+    count++;
   }
 
+  const parent = new Map([[root.key, null]]);
   const depth = new Map([[root.key, 0]]);
   const queue = [root.key];
   for (let i = 0; i < queue.length; i++) {
     const source = queue[i];
     for (const target of pages.get(source).outgoing) {
-      if (depth.has(target)) continue;
+      if (parent.has(target)) continue;
+      parent.set(target, source);
       depth.set(target, depth.get(source) + 1);
       queue.push(target);
     }
   }
 
-  const detachedDepth = Math.max(...depth.values()) + 1;
-  const rowsPerColumn = new Map();
-  for (const page of pages.values()) {
-    const column = depth.get(page.key) ?? detachedDepth;
-    const row = rowsPerColumn.get(column) || 0;
-    page.x = 22 + column * 242;
-    page.y = 24 + row * 82;
-    rowsPerColumn.set(column, row + 1);
+  const levels = new Map([[0, [root.key]]]);
+  for (const address of pages.keys()) {
+    if (address === root.key) continue;
+    const level = depth.get(address) ?? Infinity;
+    if (!levels.has(level)) levels.set(level, []);
+    levels.get(level).push(address);
   }
-  return {
-    pages, links, root: root.key, omitted: records.length - visible.length,
-    width: Math.max(285, Math.max(...[...pages.values()].map(page => page.x)) + graphNodeWidth + 62),
-    height: Math.max(130, Math.max(...[...pages.values()].map(page => page.y)) + graphNodeHeight + 24),
-  };
+  return {pages, root: root.key, count, parent, levels, omitted: records.length - visible.length};
 }
 
-function graphPath(source, target) {
-  const startY = source.y + graphNodeHeight / 2;
-  const endY = target.y + graphNodeHeight / 2;
-  if (source.x === target.x) {
-    const side = source.x + graphNodeWidth;
-    return `M ${side} ${startY} C ${side + 48} ${startY}, ${side + 48} ${endY}, ${side + 2} ${endY}`;
-  }
-  const forward = source.x < target.x;
-  const startX = source.x + (forward ? graphNodeWidth : 0);
-  const endX = target.x + (forward ? -2 : graphNodeWidth + 2);
-  const middle = (startX + endX) / 2;
-  return `M ${startX} ${startY} C ${middle} ${startY}, ${middle} ${endY}, ${endX} ${endY}`;
-}
-
-function graphSvg(tag, attributes = {}) {
-  const element = document.createElementNS("http://www.w3.org/2000/svg", tag);
-  for (const [key, value] of Object.entries(attributes)) element.setAttribute(key, value);
-  return element;
+function graphElement(tag, className, value) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (value !== undefined) node.textContent = value;
+  return node;
 }
 
 function pagePath(address) {
@@ -81,99 +62,137 @@ function pagePath(address) {
 }
 
 function renderAuditGraph(snapshot, inspect) {
-  const panel = document.getElementById("audit-graph-panel");
+  const get = id => document.getElementById(id);
+  const panel = get("audit-graph-panel");
   const graph = graphModel(snapshot);
   panel.hidden = !graph;
   if (!graph) return;
 
-  const get = id => document.getElementById(id);
-  const viewport = get("audit-graph-viewport");
-  const surface = get("audit-graph-surface");
-  const stage = get("audit-graph-stage");
+  const structure = get("audit-graph-structure");
+  const neighbors = get("audit-graph-neighbors");
+  const structureButton = get("audit-graph-structure-mode");
+  const neighborsButton = get("audit-graph-neighbors-mode");
+  const route = get("audit-graph-route");
   const selection = get("audit-graph-selection");
-  const inspectButton = get("audit-graph-inspect");
+  let selected = graph.root;
+  let mode = "structure";
+
   get("audit-graph-meta").textContent =
-    `Страниц: ${graph.pages.size} · связей: ${graph.links.length}` +
-    (graph.omitted ? ` · вне графика: ${graph.omitted} (доступны в доказательствах)` : "") +
+    `Страниц: ${graph.pages.size} · ссылок между ними: ${graph.count}` +
+    (graph.omitted ? ` · вне графика: ${graph.omitted}` : "") +
     (snapshot.partial ? " · неполный снимок" : "");
 
-  const svg = graphSvg("svg", {
-    width: graph.width, height: graph.height, viewBox: `0 0 ${graph.width} ${graph.height}`,
-    "aria-hidden": "true", class: "audit-graph-edges",
-  });
-  const defs = graphSvg("defs");
-  const marker = graphSvg("marker", {
-    id: "audit-arrow", markerWidth: 7, markerHeight: 7, refX: 6, refY: 3.5, orient: "auto",
-  });
-  marker.append(graphSvg("path", {d: "M1 0 L7 3.5 L1 7 Z", fill: "context-stroke"}));
-  defs.append(marker);
-  svg.append(defs);
-  const edges = graph.links.map(link => {
-    const edge = graphSvg("path", {
-      d: graphPath(graph.pages.get(link.source), graph.pages.get(link.target)),
-      class: "audit-graph-edge", "marker-end": "url(#audit-arrow)",
-    });
-    svg.append(edge);
-    return edge;
-  });
-  stage.replaceChildren(svg);
-
-  const buttons = new Map();
-  function select(page) {
-    const path = pagePath(page.key);
-    const status = page.fields.status ?? "—";
-    selection.textContent = `${page.key} · HTTP ${status} · входящих: ${page.incoming.length} · исходящих: ${page.outgoing.length}`;
-    inspectButton.onclick = () => inspect(page.key);
-    edges.forEach((edge, i) => {
-      const link = graph.links[i];
-      edge.classList.toggle("selected", link.source === page.key || link.target === page.key);
-    });
-    for (const [address, button] of buttons) {
-      button.setAttribute("aria-pressed", String(address === page.key));
-    }
-    const heading = page.fields.title || path;
-    buttons.get(page.key).title = `${heading} · ${page.key}`;
-  }
-
-  for (const page of graph.pages.values()) {
-    const button = document.createElement("button");
+  function card(address, onClick) {
+    const page = graph.pages.get(address);
+    const path = pagePath(address);
+    const title = page.fields.title?.trim() || path;
+    const button = graphElement("button", "audit-graph-node");
     button.type = "button";
-    button.className = "audit-graph-node";
-    button.style.left = `${page.x}px`;
-    button.style.top = `${page.y}px`;
-    button.style.width = `${graphNodeWidth}px`;
-    button.style.height = `${graphNodeHeight}px`;
-    button.title = page.key;
-    const name = document.createElement("span");
-    name.className = "audit-graph-path";
-    name.textContent = pagePath(page.key);
-    const details = document.createElement("small");
-    details.textContent = `HTTP ${page.fields.status ?? "—"}${page.key === snapshot.scope ? " · старт" : ""}`;
-    if (Number(page.fields.status) >= 400) button.dataset.error = "";
-    button.append(name, details);
-    button.addEventListener("click", () => select(page));
-    buttons.set(page.key, button);
-    stage.append(button);
+    button.title = `${title} · ${address}`;
+    const status = page.fields.status;
+    const code = graphElement("span", "audit-graph-status", status ?? "—");
+    code.title = status ? `HTTP ${status}` : "HTTP-статус неизвестен";
+    code.dataset.kind = status >= 400 ? "error" : status >= 300 ? "redirect" : status >= 200 ? "ok" : "unknown";
+    const top = graphElement("span", "audit-graph-node-top");
+    top.append(graphElement("span", "audit-graph-title", title), code);
+    button.append(top, graphElement("span", "audit-graph-path", path));
+    if (address === graph.root) button.dataset.root = "";
+    button.addEventListener("click", onClick);
+    return button;
   }
 
-  let zoom = 1;
-  function applyZoom(next) {
-    zoom = Math.max(.65, Math.min(1.6, next));
-    stage.style.width = `${graph.width}px`;
-    stage.style.height = `${graph.height}px`;
-    stage.style.transform = `scale(${zoom})`;
-    surface.style.width = `${graph.width * zoom}px`;
-    surface.style.height = `${graph.height * zoom}px`;
-    get("audit-graph-zoom-in").disabled = zoom >= 1.6;
-    get("audit-graph-zoom-out").disabled = zoom <= .65;
+  function renderNeighbors() {
+    const page = graph.pages.get(selected);
+    const group = (label, addresses) => {
+      const section = graphElement("section", "audit-graph-relation");
+      section.append(graphElement("h4", "", `${label} · ${addresses.length}`));
+      if (!addresses.length) {
+        section.append(graphElement("p", "muted", "В снимке таких ссылок нет."));
+      } else {
+        const grid = graphElement("div", "audit-graph-grid");
+        for (const address of addresses) {
+          grid.append(card(address, () => {
+            select(address);
+            get("audit-graph-focus").focus({preventScroll: true});
+          }));
+        }
+        section.append(grid);
+      }
+      return section;
+    };
+    const current = graphElement("div", "audit-graph-focus");
+    const focus = graphElement("h4", "", pagePath(selected));
+    focus.id = "audit-graph-focus";
+    focus.tabIndex = -1;
+    current.append(graphElement("span", "eyebrow", "Выбранная страница"), focus);
+    neighbors.replaceChildren(group("Ведут на страницу ↓", page.incoming), current, group("Со страницы ведут ↓", page.outgoing));
   }
-  get("audit-graph-zoom-in").onclick = () => applyZoom(zoom + .15);
-  get("audit-graph-zoom-out").onclick = () => applyZoom(zoom - .15);
-  get("audit-graph-reset").onclick = () => {
-    applyZoom(1);
-    viewport.scrollLeft = 0;
-    viewport.scrollTop = 0;
-    select(graph.pages.get(graph.root));
-  };
-  get("audit-graph-reset").onclick();
+
+  const cards = new Map();
+  function select(address) {
+    selected = address;
+    const page = graph.pages.get(address);
+    const chain = [];
+    if (graph.parent.has(address)) {
+      for (let current = address; current !== null; current = graph.parent.get(current)) chain.unshift(current);
+    }
+    const path = graphElement("ol", "audit-graph-breadcrumbs");
+    for (const item of chain) {
+      const label = item === graph.root ? "Старт" : pagePath(item);
+      const li = graphElement("li");
+      if (item === address) {
+        const current = graphElement("span", "", label);
+        current.setAttribute("aria-current", "location");
+        li.append(current);
+      } else {
+        const button = graphElement("button", "", label);
+        button.type = "button";
+        button.addEventListener("click", () => {
+          select(item);
+          if (mode === "structure") cards.get(item).focus();
+          else get("audit-graph-focus").focus({preventScroll: true});
+        });
+        li.append(button);
+      }
+      path.append(li);
+    }
+    route.replaceChildren(chain.length ? path : graphElement("span", "muted", "Путь от старта в снимке не найден."));
+    for (const [key, button] of cards) {
+      button.setAttribute("aria-pressed", String(key === address));
+      button.classList.toggle("on-route", chain.includes(key));
+    }
+    selection.textContent = `${page.key} · HTTP ${page.fields.status ?? "—"} · входящих: ${page.incoming.length} · исходящих: ${page.outgoing.length}`;
+    if (mode === "neighbors") renderNeighbors();
+  }
+
+  structure.replaceChildren();
+  for (const [depth, addresses] of [...graph.levels].sort(([a], [b]) => a - b)) {
+    const section = graphElement("section", "audit-graph-level");
+    const heading = depth === 0 ? "Стартовая страница" : depth === Infinity ? "Без пути от старта"
+      : depth === 1 ? "1 переход от старта" : `Переходов от старта: ${depth}`;
+    const intro = graphElement("div", "audit-graph-level-heading");
+    intro.append(graphElement("h4", "", heading), graphElement("span", "", String(addresses.length)));
+    const grid = graphElement("div", "audit-graph-grid");
+    for (const address of addresses) {
+      const item = card(address, () => select(address));
+      cards.set(address, item);
+      grid.append(item);
+    }
+    section.append(intro, grid);
+    structure.append(section);
+  }
+
+  function switchMode(next) {
+    mode = next;
+    structure.hidden = mode !== "structure";
+    neighbors.hidden = mode !== "neighbors";
+    structureButton.setAttribute("aria-pressed", String(!structure.hidden));
+    neighborsButton.setAttribute("aria-pressed", String(!neighbors.hidden));
+    if (!neighbors.hidden) renderNeighbors();
+  }
+  structureButton.onclick = () => switchMode("structure");
+  neighborsButton.onclick = () => switchMode("neighbors");
+  get("audit-graph-inspect").onclick = () => inspect(selected);
+  switchMode("structure");
+  select(graph.root);
 }

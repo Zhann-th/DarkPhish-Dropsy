@@ -7,8 +7,8 @@
   <title>Dropsy — Аудит веб-активов</title>
   <link rel="icon" href="/static/dropsy-symbol.png" type="image/png">
   <link rel="stylesheet" href="/static/site.css?v=7.4.1">
-  <link rel="stylesheet" href="/static/audit.css?v=7.2">
-  <script src="/static/audit-graph.js?v=7.2" defer></script>
+  <link rel="stylesheet" href="/static/audit.css?v=7.5.1">
+  <script src="/static/audit-graph.js?v=7.5.1" defer></script>
   <script src="/static/audit.js?v=7.3" defer></script>
   <script src="/static/timeline.js?v=7" defer></script>
 </head>
@@ -136,16 +136,18 @@
             <h3 id="audit-graph-heading">Граф структуры сайта</h3>
             <p class="muted audit-graph-meta" id="audit-graph-meta"></p>
           </div>
-          <div class="actions">
-            <button type="button" class="button" id="audit-graph-zoom-out" aria-label="Уменьшить граф">−</button>
-            <button type="button" class="button" id="audit-graph-zoom-in" aria-label="Увеличить граф">+</button>
-            <button type="button" class="button" id="audit-graph-reset">Сбросить вид</button>
+          <div class="audit-graph-modes" role="group" aria-label="Вид графа">
+            <button type="button" id="audit-graph-structure-mode" aria-pressed="true">Структура</button>
+            <button type="button" id="audit-graph-neighbors-mode" aria-pressed="false">Связи страницы</button>
           </div>
         </div>
-        <div id="audit-graph-viewport" class="audit-graph-viewport" tabindex="0" aria-label="Прокручиваемый граф страниц">
-          <div class="audit-graph-surface" id="audit-graph-surface">
-            <div class="audit-graph-stage" id="audit-graph-stage"></div>
-          </div>
+        <div class="audit-graph-canvas">
+          <nav class="audit-graph-trail" aria-label="Кратчайший путь от старта">
+            <span class="eyebrow">Путь от старта</span>
+            <div id="audit-graph-route"></div>
+          </nav>
+          <div id="audit-graph-structure" class="audit-graph-view"></div>
+          <div id="audit-graph-neighbors" class="audit-graph-view" hidden></div>
         </div>
         <div class="audit-graph-footer">
           <p class="muted" id="audit-graph-selection" aria-live="polite"></p>
