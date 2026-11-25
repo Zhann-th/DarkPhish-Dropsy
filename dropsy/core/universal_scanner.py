@@ -111,7 +111,7 @@ class UniversalOSINTScanner:
                 raise ValueError("Для аудита доступны только публичные IP-адреса.")
         return addresses[:20]
 
-    def _safe_fetch(self, url, host, ip, max_bytes=65536):
+    def _safe_fetch(self, url, host, ip, max_bytes=65536, *, headers_only=False):
         parts = urlsplit(url)
         port = 443 if parts.scheme == "https" else 80
         certificate = None
@@ -145,7 +145,10 @@ class UniversalOSINTScanner:
                     "cipher": conn.sock.cipher()[0],
                     "verified": True,
                 }
-            conn.request("GET", parts.path or "/", headers={
+            request_path = parts.path or "/"
+            if headers_only and parts.query:
+                request_path += "?" + parts.query
+            conn.request("HEAD" if headers_only else "GET", request_path, headers={
                 "Host": parts.netloc, "User-Agent": "Dropsy/4.0 web asset audit",
                 "Accept": "text/html,application/xhtml+xml", "Connection": "close",
             })
@@ -155,6 +158,8 @@ class UniversalOSINTScanner:
                 if key.lower() in self.RESPONSE_HEADERS
             }
             mime = response.getheader("Content-Type", "").split(";", 1)[0].lower()
+            if headers_only:
+                return {"status": response.status, "location": response.getheader("Location")}
             body = response.read(max_bytes + 1) if "html" in mime else b""
             return {
                 "status": response.status, "content_type": mime, "headers": headers,

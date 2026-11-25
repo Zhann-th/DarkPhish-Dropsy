@@ -15,6 +15,7 @@ from dropsy.core.audit import Snapshot, build_snapshot, compare_snapshots, sampl
 from dropsy.core.casebook import CaseInput, MaterialInput, add_material, create_case, list_cases, read_case, read_image
 from dropsy.core.history import list_assets, list_snapshots, read_snapshot, save_snapshot
 from dropsy.core.darkphish_course import MAX_SITE_PAGES, analyze as analyze_darkphish, analyze_website
+from dropsy.core.darkphish_mail import analyze_mail
 from dropsy.core.entity_graph import OsintKnowledgeGraph
 from dropsy.core.search_engine import OsintPathSearchEngine
 from dropsy.core.bayes_engine import BayesianAttributionEngine
@@ -26,7 +27,7 @@ from dropsy.data.osint_cases import AVAILABLE_CASES, build_case_graph
 app = FastAPI(
     title="Dropsy Asset Audit API",
     description="Web asset evidence, versioned snapshots, and an educational AI case.",
-    version="7.3.0"
+    version="7.4.0"
 )
 
 # Initialize global active case graph (Operation DarkPhish by default)
@@ -272,6 +273,28 @@ class DarkPhishRequest(BaseModel):
     scenario: Literal["complete", "missing"] = "complete"
     snapshot: Snapshot | None = None
     destination: str | None = Field(default=None, max_length=30)
+
+
+class DarkPhishMailRequest(BaseModel):
+    text: str = Field(default="", max_length=20000)
+    url: str = Field(default="", max_length=2048)
+    encoded: str = Field(default="", max_length=699052)
+    expected_domain: str = Field(default="", max_length=253)
+    method: Literal["bfs", "dfs", "ucs", "astar"] = "astar"
+    resolve: bool = False
+
+
+@app.post("/api/darkphish/mail")
+def darkphish_mail(req: DarkPhishMailRequest):
+    if not scan_slots.acquire(blocking=False):
+        raise HTTPException(429, "Another analysis is running. Try again shortly.")
+    try:
+        restricted, origins = _web_origin_policy() if req.resolve else (False, ())
+        return analyze_mail(**req.model_dump(), origins=origins if restricted else None)
+    except (ValueError, RecursionError) as exc:
+        raise HTTPException(422, str(exc)) from exc
+    finally:
+        scan_slots.release()
 
 
 @app.post("/api/darkphish/collect")

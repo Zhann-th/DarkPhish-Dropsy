@@ -1,0 +1,8 @@
+From: Service Team <team@service.example>
+To: Reader <reader@example.org>
+Subject: Urgent account notice
+Content-Type: text/html; charset=UTF-8
+
+<p>Please enter your password to continue.</p>
+<p><a href="https://account-review.example/verify">service.example</a></p>
+<p><a href="https://service.example/help">Help</a></p>

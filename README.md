@@ -1,4 +1,4 @@
-# Dropsy 7.3 · DarkPhish — AI Fundamentals Final Project
+# Dropsy 7.4 · DarkPhish — AI Fundamentals Final Project
 
 > **Live Demo:** [https://dropsy-repo.vercel.app/darkphish](https://dropsy-repo.vercel.app/darkphish)  
 > **Student:** Zhanassyl Syrlibayev (`Zhann-th`)  
@@ -8,7 +8,7 @@
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-009688.svg?style=flat&logo=fastapi)](https://fastapi.tiangolo.com)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![Vercel](https://img.shields.io/badge/deployed_on-Vercel-black.svg?logo=vercel)](https://dropsy-repo.vercel.app/darkphish)
-[![Tests Passing](https://img.shields.io/badge/tests-42%20passed-brightgreen.svg)]()
+[![Tests Passing](https://img.shields.io/badge/tests-46%20passed-brightgreen.svg)]()
 
 ---
 
@@ -48,6 +48,11 @@
    - Solves for state values using Bellman value iteration with discount factor $\gamma = 0.9$:
      $$V(s) = \max_{a} \left[ R(s, a) + \gamma \sum_{s'} P(s' \mid s, a) V(s') \right]$$
    - At $80.95\%$ posterior probability, **Escalate** achieves the highest Q-score ($+3.714$), driving the automated triage decision. When evidence is missing, probability drops to $28.57\%$, switching the recommendation to **Manual Review**.
+
+### New in Dropsy 7.4 · DarkPhish Mail & Link Inspector
+- Support for parsing real `.eml` emails, raw email text, and URL links with heuristic multi-hop search, Bayesian aggregation, and Bellman triage scoring.
+- Added sample emails: [`docs/darkphish/examples/ordinary.eml`](docs/darkphish/examples/ordinary.eml) and [`docs/darkphish/examples/suspicious.eml`](docs/darkphish/examples/suspicious.eml).
+- Total unit tests expanded to 46.
 
 ---
 
@@ -95,17 +100,8 @@ python3 -m dropsy.core.darkphish_course --algorithm bfs
 
 ### Option 4: Run Test Suite
 
-Verify all 42 automated unit tests:
+Verify all 46 automated unit tests:
 
 ```bash
 python3 -m unittest discover -s tests
 ```
-
----
-
-## Defense Guide Summary
-
-- **Problem & Objectives (2 min):** Triage phishing reports with incomplete evidence while balancing risk of missed incidents vs unnecessary escalation costs.
-- **Live Demo (3–5 min):** Demonstrate A\* (cost 6) $\rightarrow$ Bayes update ($80.95\%$) $\rightarrow$ MDP Escalate. Toggle "Analyst finding unavailable" to show switch to Manual Review. Switch to BFS to show 2-hop route with cost 10 and Low Priority.
-- **Three AI Topics (2 min):** Explain graph search heuristic admissibility, conditional independence in sequential Bayes, and Bellman discount factor $\gamma = 0.9$ in MDP.
-- **Q&A (up to 3 min):** Reference the prepared responses in [`docs/darkphish/DEFENSE.md`](docs/darkphish/DEFENSE.md).

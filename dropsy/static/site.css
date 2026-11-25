@@ -36,9 +36,8 @@ button { color: inherit; }
 .skip:focus { transform: none; }
 .site-header { border-bottom: 1px solid var(--line); }
 .masthead { display: flex; min-height: 74px; justify-content: space-between; align-items: center; gap: 20px; }
-.brand { display: inline-flex; gap: 10px; align-items: center; text-decoration: none; font-size: 27px; color: var(--ink); line-height: 1; letter-spacing: -.065em; font-weight: 720; }
-.brand-mark { width: 22px; height: 22px; display: inline-block; border: 1px solid currentColor; position: relative; border-radius: 50% 50% 50% 2px; }
-.brand-mark::before { content: ""; position: absolute; inset: 4px; border: 1px solid currentColor; border-radius: inherit; }
+.brand { display: inline-flex; flex: 0 0 auto; align-items: center; }
+.brand img { display: block; width: 112px; height: auto; }
 .nav-links, .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
 .nav-links { gap: clamp(15px, 2.4vw, 38px); font-size: 14px; }
 .nav-links > a { text-decoration: none; color: var(--muted); }
@@ -68,8 +67,7 @@ button { color: inherit; }
 @media (max-width: 420px) {
   .masthead { min-height: 65px; gap: 12px; }
   .nav-links { gap: 12px; font-size: 12px; }
-  .brand { font-size: 23px; gap: 6px; }
-  .brand-mark { width: 18px; height: 18px; }
+  .brand img { width: 96px; }
 }
 @media (max-width: 420px) {
   .site-header .masthead, .site-footer .masthead { flex-wrap: wrap; padding-block: 11px; }

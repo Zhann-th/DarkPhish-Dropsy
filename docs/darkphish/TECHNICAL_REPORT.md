@@ -71,3 +71,11 @@ DarkPhish reuses the bounded HTTP collector and requests at most six public page
 | 4xx or 5xx | 0.40 | 0.05 |
 
 Website mode starts at a prior of 0.10. It uses the same Bellman solver with website-review action labels. The likelihoods, independence assumption, cost rule and MDP rewards are illustrative and have no calibration for judging a real site. The collector stops at redirects and does not execute JavaScript. A single observed page supports a zero-hop route. A missing starting response prevents the pipeline from running. A test fixture exercises collection, direction of edges, posterior and action scores without relying on a third-party server.
+
+## Email and link review
+
+DarkPhish accepts an original .eml, pasted text, and an optional URL. The parser reads text and HTML anchors without rendering the HTML. From and Reply-To can be compared when both addresses are present. English and Russian patterns detect candidate urgency and credential-request wording. An optional expected domain provides context for the link domain comparison.
+
+Graph search builds an evidence route for each extracted URL. Bayesian updates combine the scored observations on that route. The route with the highest model score is used for the detailed Bellman action comparison. The table shows each link separately. An empty evidence set produces an insufficient-evidence result, and incomplete destinations can require manual review even when the model's scores prefer closing the report.
+
+A bounded, explicitly enabled HTTP HEAD check can show each server response and the final successful address. HEAD responses can differ from an interactive visit. Optional HTTP checks do not execute scripts. The two included examples run without outbound requests. With `service.example` as the expected domain, the ordinary sample has no scored indicators and the suspicious sample reaches 81.99% in the instructional model. These examples are functional checks of the pipeline. The likelihoods and action rewards require empirical validation before using the score as a calibrated probability.

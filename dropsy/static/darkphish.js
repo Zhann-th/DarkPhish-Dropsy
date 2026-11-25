@@ -38,6 +38,7 @@ function svgElement(tag, attributes) {
 }
 let currentSnapshot = null;
 const isWebsite = () => byId("mode").value === "site";
+const isMail = () => byId("mode").value === "mail";
 
 function websitePositions(graph, source) {
   const depth = new Map([[source, 0]]);
@@ -64,12 +65,12 @@ function websitePositions(graph, source) {
 
 function drawGraph(data, route) {
   const {graph, labels} = data;
-  const positions = data.source === "observed" ? websitePositions(graph, data.start) : fixturePositions;
+  const positions = data.source === "synthetic" ? fixturePositions : websitePositions(graph, data.start);
   const svg=byId("graph");
   svg.replaceChildren();
   const points = Object.values(positions);
   const width = Math.max(670, Math.max(...points.map(([x]) => x)) + 85);
-  const height = Math.max(data.source === "observed" ? 135 : 330, Math.max(...points.map(([,y]) => y)) + 45);
+  const height = Math.max(data.source === "synthetic" ? 330 : 135, Math.max(...points.map(([,y]) => y)) + 45);
   svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
   const defs=svgElement("defs",{});
   const marker=svgElement("marker",{id:"arrow",markerWidth:8,markerHeight:8,refX:7,refY:4,orient:"auto"});
@@ -108,16 +109,20 @@ function fill(data) {
   const route=data.routes[data.method];
   drawGraph(data, route.path);
   const observed = data.source === "observed";
+  const mail = data.source === "mail";
+  byId("mail-links-panel").hidden = !mail;
+  if (mail) showMailLinks(data);
   byId("context").textContent = observed
     ? data.url + " · " + data.pages.length + " observed pages" + (data.partial ? " · partial coverage" : "")
       + (data.start === data.goal ? " · route contains only the starting page" : "")
-    : "Synthetic phishing-report example";
+    : mail ? "Email and link review" : "Synthetic phishing-report example";
   byId("hypothesis").textContent = observed
     ? "H = the observed route deserves a closer site review, under the course model."
-    : "H = the reported email is phishing in the synthetic scenario.";
+    : mail ? "Heuristic model score for this evidence route, with illustrative likelihoods."
+      : "H = the reported email is phishing in the synthetic scenario.";
   byId("assumptions").textContent = observed
     ? "HTTP observations are real. Prior, likelihoods, weights and rewards are illustrative. Read the result as a classroom estimate of review priority."
-    : "Synthetic observations and illustrative rewards.";
+    : mail ? "Illustrative decision policy. Incomplete evidence can require manual review." : "Synthetic observations and illustrative rewards.";
   if (observed) {
     const selector = byId("destination");
     selector.replaceChildren(...data.pages.filter(page=>data.reachable.includes(page.id)).map(page=>{
@@ -137,17 +142,50 @@ function fill(data) {
   table("trace", weighted?["Node","g","h","f"]:["Node","Accumulated route cost"],
     route.trace.map(row=>weighted?[data.labels[row.node],row.g,row.h,row.f]:[data.labels[row.node],row.g]));
   const belief=data.belief;
-  byId("posterior").textContent=percent(belief.initial)+" → "+percent(belief.posterior);
+  const explainScore = !mail || data.has_signals;
+  byId("posterior").textContent=explainScore ? percent(belief.initial)+" → "+percent(belief.posterior) : "Insufficient evidence";
   table("belief-table",["Observation","P(E|H)","P(E|¬H)","Posterior"],belief.steps.map(row=>
     [row.signal,row.likelihood_phishing,row.likelihood_benign,percent(row.posterior)]));
   const decision=data.decision;
-  byId("decision").textContent=decision.recommended;
+  byId("decision").textContent = data.review_reason
+    ? "Request manual review · " + data.review_reason
+    : decision.recommended;
+  byId("actions").hidden = !explainScore;
+  byId("iterations").hidden = !explainScore;
   byId("iterations").textContent=decision.iterations+" Bellman iterations · γ = "+decision.gamma;
   const actions=Object.entries(decision.actions);
   table("actions",["Action","E[R]","P(pending)","Q"],actions.map(([name,row])=>
     [name,n3(row.reward),row.pending_probability,n3(row.q)]),actions.findIndex(([name])=>name===decision.recommended));
   byId("results").hidden=false;
 }
+function showMailLinks(data) {
+  byId("mail-links-note").textContent = data.links.length
+    ? "Each row shows the original URL and observed HTTP hops. The highlighted row supplies the route below."
+      + (data.truncated_links ? " Only the first four distinct links are included." : "")
+    : "No HTTP(S) links were found. The route uses the email evidence.";
+  table("mail-links", ["Original link", "Observed HTTP hops", "Final address", "Status", "Model score"],
+    data.links.map(link => [
+      link.input,
+      link.hops.filter(hop => hop.status !== null).map(hop => `${hop.status} · ${hop.url}`).join("\n") || "—",
+      link.final || "Unconfirmed",
+      link.state,
+      link.score === null ? "—" : percent(link.score),
+    ]), data.selected_link ?? -1);
+}
+
+async function readMailFile(file) {
+  if (!file) return "";
+  if (!file.name.toLowerCase().endsWith(".eml") || file.size > 512 * 1024) {
+    throw new Error("Use an .eml file no larger than 512 KiB.");
+  }
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.split(",", 2)[1]);
+    reader.onerror = () => reject(new Error("Could not open the file."));
+    reader.readAsDataURL(file);
+  });
+}
+
 async function post(path, body) {
   const response = await fetch(path, {
     method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body),
@@ -174,7 +212,19 @@ function notify(message, error = false) {
   notice.classList.toggle("demo-error", error);
 }
 
-function analyzeCurrent() {
+async function analyzeCurrent() {
+  if (isMail()) {
+    const result = await post("/api/darkphish/mail", {
+      method: byId("method").value,
+      text: byId("mail-text").value,
+      url: byId("mail-url").value,
+      encoded: await readMailFile(byId("mail-file").files[0]),
+      expected_domain: byId("mail-domain").value,
+      resolve: byId("mail-network").checked,
+    });
+    fill(result);
+    return;
+  }
   const website = isWebsite();
   return post("/api/darkphish/analyze", {
     method: byId("method").value,
@@ -211,17 +261,21 @@ byId("site-controls").addEventListener("submit", event => {event.preventDefault(
 byId("mode").addEventListener("change", () => {
   const website = isWebsite();
   byId("site-controls").hidden = !website;
-  byId("scenario-field").hidden = website;
+  byId("mail-controls").hidden = !isMail();
+  byId("scenario-field").hidden = website || isMail();
   byId("destination-field").hidden = true;
   byId("results").hidden = true;
   notify(website && !currentSnapshot ? "Enter a public URL and collect a snapshot." : "");
   setPending(false);
-  if (!website || currentSnapshot) run();
+  if (!isMail() && (!website || currentSnapshot)) run();
 });
 const target = new URLSearchParams(location.search).get("target");
 if (target) {
   byId("target").value = target;
   byId("mode").value = "site";
+  byId("mode").dispatchEvent(new Event("change"));
+} else if (new URLSearchParams(location.search).get("mode") === "mail") {
+  byId("mode").value = "mail";
   byId("mode").dispatchEvent(new Event("change"));
 } else {
   run();

@@ -8,6 +8,13 @@ Explain that one pipeline links the chosen route, the probability, and the actio
 
 ## Live demonstration · 3–5 minutes
 
+1. In Dropsy choose **Check email or link**. Upload `examples/ordinary.eml`, enter `service.example` as the expected domain, and leave the HTTP check off for these test addresses.
+2. Run analysis and show **Insufficient evidence**. Replace the upload with `examples/suspicious.eml` and run again.
+3. Show the hidden destination, the two link rows and the highest-scoring evidence route. Point out the urgency, credential wording and domain mismatch. Show the 81.99% instructional score and Bellman action scores.
+4. Explain that the optional live HTTP check displays redirects and marks the destination unconfirmed when it cannot establish a successful terminal address.
+
+### Synthetic fixture for algorithm comparison
+
 1. Start Dropsy with `python3 main.py --server` and open `http://127.0.0.1:8000/darkphish`. Select **A*** and **All observations available**. Run triage.
 2. Compare the four rows. A* and UCS both find cost 6. BFS finds a shorter route in hops but a higher-cost route. Expand the trace and point to g, h and f.
 3. Read 10% → 28.57% → 80.95% and show the final Q values. The model recommends escalation.
